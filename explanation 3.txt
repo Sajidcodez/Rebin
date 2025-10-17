@@ -1,0 +1,148 @@
+🧩 ReBin Pro — Codebase Explained (Simplified & Technical)
+🎯 What It Does
+
+ReBin Pro helps users sort waste correctly.
+You upload or take a photo of an item, and the app tells you whether it belongs in recycling, compost, or trash, along with a short explanation and eco-tip.
+It uses computer vision to detect items and AI reasoning (via OpenRouter or Gemini) to explain the decision.
+
+🏗️ Architecture Overview
+
+Full-stack app with:
+
+Frontend (React + TypeScript) → user interface
+
+Backend (FastAPI) → handles AI calls and database
+
+Cloudflare Worker → image preprocessing + routing
+
+Supabase (PostgreSQL) → authentication and data storage
+
+Mock CV Service → local test for object detection
+
+Docker → containerized deployment for all services
+
+🖥️ Frontend — React App
+
+Purpose: The user-facing web app for uploading images, viewing results, and tracking impact.
+Built with: React 18, TypeScript, React Query, TailwindCSS, Supabase JS SDK.
+
+Key Files
+File	Description
+frontend/src/App.tsx	Main app entry point and route setup.
+frontend/src/components/CameraUpload.tsx	Lets users take/upload a photo and enter ZIP code; sends to backend for analysis.
+frontend/src/components/ResultCard.tsx	Displays AI’s classification (Recycle/Compost/Trash) with confidence, reasoning, and eco-tip.
+frontend/src/components/StatsPanel.tsx	Shows user progress and total CO₂ saved.
+frontend/src/lib/api.ts	Wrapper for backend HTTP requests (/infer, /explain, /event).
+frontend/src/lib/supabase.ts	Configures Supabase Auth + DB client.
+frontend/src/types/index.ts	Shared TypeScript interfaces (e.g., SortEvent, Item, Policy).
+
+Frontend flow:
+CameraUpload → calls api.infer() → backend returns detected items → calls api.explain() → shows in ResultCard → logs event to Supabase → updates StatsPanel.
+
+⚙️ Backend — FastAPI Server
+
+Purpose: Core logic and integration with AI services and the database.
+Built with: FastAPI, Pydantic, httpx/aiohttp (async HTTP), Supabase Python Client.
+
+Key Files
+File	Description
+backend/main.py	App entry point; includes CORS setup and route registration.
+backend/routes/infer.py	Receives photo, forwards to CV model (on Gradient or mock), returns detected items.
+backend/routes/explain.py	Sends detected items + ZIP policy to OpenRouter/Gemini; returns bin decision, rationale, and eco-tip.
+backend/routes/event.py	Logs the user’s sort event and CO₂ savings to Supabase.
+backend/utils/openrouter_client.py	Handles OpenRouter API requests and response parsing.
+backend/utils/supabase_client.py	Connects to Supabase for reading/writing data.
+backend/schemas.py	Pydantic models for validation (e.g., Item, ExplainRequest, SortEvent).
+
+Backend flow:
+Receive image → /infer detects items → /explain decides bin type → /event saves record → sends combined JSON back to frontend.
+
+🌐 Edge Layer — Cloudflare Worker
+
+Purpose: Lightweight preprocessing & orchestration at the edge for faster responses.
+
+File	Description
+cloudflare-worker/src/index.ts	Resizes uploaded image, reads ZIP param, fetches local recycling policy from KV storage, then forwards data to the backend (/infer, /explain). Combines responses into one JSON reply.
+
+This reduces backend load and latency for common ZIP lookups.
+
+🧠 AI Services
+Component	Description
+Computer Vision (Model)	Deployed on DigitalOcean Gradient (or local mock). Detects items and materials in the image.
+OpenRouter / Gemini	LLM used for reasoning — decides the correct bin and explains the logic in plain language.
+ElevenLabs Voice	Converts short text feedback into speech for accessibility and “wow factor.”
+services/cv-mock/app.py	A small mock CV API returning sample detections for testing without a real GPU model.
+🗄️ Database — Supabase (PostgreSQL)
+
+Stores all user data and statistics.
+Tables
+
+users: basic profile info (email, zip)
+
+sort_events: one row per image processed (items, decision, CO₂ saved)
+
+policies: recycling rules by ZIP code (cached in Cloudflare KV)
+
+⚙️ Configuration & Infrastructure
+File	Description
+frontend/vite.config.ts, tailwind.config.js, tsconfig.json	Build, styling, and TypeScript configs.
+backend/requirements.txt, backend/Dockerfile	Python deps & container setup.
+docker-compose.yml	Runs frontend, backend, CV mock, and DB together.
+.env.example (root + frontend + backend)	Template for all API keys and URLs.
+services/cv-mock/Dockerfile	Container for mock CV service.
+🔄 Complete Data Flow
+
+User uploads photo in browser.
+
+Cloudflare Worker compresses & forwards to backend with ZIP code.
+
+Backend /infer → CV model detects items.
+
+Backend /explain → AI model decides bins + reasoning.
+
+Backend /event → logs event + CO₂ impact to Supabase.
+
+Frontend displays results and plays ElevenLabs audio.
+
+StatsPanel updates total items sorted and emissions saved.
+
+🧰 Key Technologies
+
+Frontend: React + TypeScript + TailwindCSS + React Query
+
+Backend: FastAPI + Pydantic + httpx + Supabase Client
+
+Edge: Cloudflare Workers + KV Storage
+
+AI: OpenRouter / Gemini (reasoning), Gradient CV model (detection), ElevenLabs TTS
+
+Database: Supabase (PostgreSQL)
+
+Deployment: Docker Compose + GoDaddy Domain
+
+▶️ How to Run Locally
+
+Copy .env.example → .env and fill in your API keys (Supabase, OpenRouter, ElevenLabs).
+
+Run docker-compose up --build.
+
+Visit http://localhost:5173
+ → upload a photo → watch classification + reasoning appear.
+
+Check Supabase dashboard → see logged sort_events.
+
+✅ Summary
+
+ReBin Pro is a full, modular AI application:
+
+React frontend for user interaction
+
+FastAPI backend for AI logic and DB I/O
+
+Cloudflare edge for speed
+
+Supabase database for persistent stats
+
+OpenRouter + Gradient + ElevenLabs for the “AI magic.”
+
+All services talk to each other through clear REST APIs, making it easy to extend or replace components later.

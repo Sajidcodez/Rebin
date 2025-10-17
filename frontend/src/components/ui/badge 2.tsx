@@ -1,0 +1,16 @@
+import type React from "react"
+import type { IconProps } from "../ui/icons"
+
+interface BadgeProps {
+  icon: React.ComponentType<IconProps>
+  text: string
+}
+
+export function Badge({ icon: Icon, text }: BadgeProps) {
+  return (
+    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20">
+      <Icon className="h-4 w-4 text-primary" />
+      <span className="text-sm font-medium text-primary">{text}</span>
+    </div>
+  )
+}
