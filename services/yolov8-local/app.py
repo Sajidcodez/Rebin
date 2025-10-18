@@ -17,27 +17,27 @@ from ultralytics import YOLO  # import after the allow-list so internal loads ar
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="YOLOv8n Local Service")
+app = FastAPI(title="YOLOv11 Local Service")
 
 try:
     # wrap the load in a safe_globals context to be extra sure
     with safe_globals([DetectionModel, container.Sequential]):
-        model = YOLO("yolov8s.pt")  # <-- DO NOT call torch.load yourself
-    logger.info("YOLOv8s model loaded successfully")
+        model = YOLO("yolo11l.pt")  # auto-downloads if not present
+    logger.info("yolo11l model loaded successfully")
 except FileNotFoundError:
-    logger.error("YOLOv8s model file not found. Please ensure yolov8s.pt is in the current directory")
+    logger.error("yolo11l weights not found and could not be downloaded")
     model = None
 except torch.serialization.pickle.UnpicklingError as e:
     logger.error(f"Model file corrupted or incompatible: {e}")
     model = None
 except Exception as e:
-    logger.error(f"Failed to load YOLOv8s model: {e}")
+    logger.error(f"Failed to load yolo11l model: {e}")
     model = None
 
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
     if model is None:
-        raise HTTPException(status_code=503, detail="YOLOv8s model not loaded - service unavailable")
+        raise HTTPException(status_code=503, detail="yolo11l model not loaded - service unavailable")
     
     # Validate file type
     if not file.content_type or not file.content_type.startswith('image/'):
