@@ -30,9 +30,9 @@ export default function SortingPage() {
       <Header />
       
       <main className="flex-1 container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex flex-col lg:flex-row gap-6">
-          {/* Webcam Scanner - 70% on desktop */}
-          <div className="w-full lg:w-[70%]">
+        <div className="flex flex-col lg:flex-row gap-6 max-w-full min-h-[600px]">
+          {/* Webcam Scanner - 70% on desktop, fixed width prevents expansion */}
+          <div className="w-full lg:w-[70%] flex-shrink-0 flex-grow-0 min-w-0 h-full">
             <WebcamScanner
               isScanning={isScanning}
               setIsScanning={handleScanningChange}
@@ -40,8 +40,8 @@ export default function SortingPage() {
             />
           </div>
 
-          {/* Info Panel - 30% on desktop */}
-          <div className="w-full lg:w-[30%]">
+          {/* Info Panel - 30% on desktop, can scroll if content overflows */}
+          <div className="w-full lg:w-[30%] flex-shrink-0 flex-grow-0 min-w-0 overflow-auto">
             <ScanInfoPanel isScanning={isScanning} />
           </div>
         </div>
