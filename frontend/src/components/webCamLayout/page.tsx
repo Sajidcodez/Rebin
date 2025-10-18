@@ -4,25 +4,27 @@ import { useState } from "react";
 import { Header } from "../landingPage/header";
 import { Footer } from "../landingPage/footer";
 import { WebcamScanner } from "./webcamScanner"
-import { ScanInfoPanel } from "./scanInfoPanel"
+import { ScanInfoPanel } from "./scaninfoPanel"
+import { ItemDetection } from "../../types"
 
 export default function SortingPage() {
   const [isScanning, setIsScanning] = useState(false)
-  const [scanResults, setScanResults] = useState<any[]>([])
+  const [scanResults, setScanResults] = useState<ItemDetection[]>([])
 
   const handleImageUpload = (imageData: string) => {
-    console.log("[v0] Image uploaded, sending to backend:", imageData.substring(0, 50))
-    // TODO: Call backend API here
-    // const result = await classifyImage(imageData)
-    // setScanResults(prev => [...prev, result])
+    console.log("[Page] Image uploaded, sending to backend:", imageData.substring(0, 50))
   }
 
   const handleScanningChange = (scanning: boolean) => {
     setIsScanning(scanning)
     if (!scanning) {
-      // Clear results when stopping
       setScanResults([])
     }
+  }
+
+  const handleDetectionResults = (results: ItemDetection[]) => {
+    console.log("[Page] Received detection results:", results)
+    setScanResults(results)
   }
 
   return (
@@ -37,12 +39,16 @@ export default function SortingPage() {
               isScanning={isScanning}
               setIsScanning={handleScanningChange}
               onImageUpload={handleImageUpload}
+              onDetectionResults={handleDetectionResults}
             />
           </div>
 
           {/* Info Panel - 30% on desktop, can scroll if content overflows */}
           <div className="w-full lg:w-[30%] flex-shrink-0 flex-grow-0 min-w-0 overflow-auto">
-            <ScanInfoPanel isScanning={isScanning} />
+            <ScanInfoPanel 
+              isScanning={isScanning}
+              detectionResults={scanResults}
+            />
           </div>
         </div>
       </main>

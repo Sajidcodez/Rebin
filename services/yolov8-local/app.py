@@ -19,6 +19,21 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI(title="YOLOv11 Local Service")
 
+# Waste-relevant categories to keep (filter out people, electronics, furniture, etc.)
+WASTE_CATEGORIES = {
+    # Food & Organic
+    "banana", "apple", "sandwich", "orange", "broccoli", "carrot", "hot dog", 
+    "pizza", "donut", "cake", "bowl",
+    # Containers & Packaging
+    "bottle", "wine glass", "cup", "fork", "knife", "spoon",
+    # Paper & Cardboard
+    "book", "backpack", "handbag", "suitcase", "umbrella",
+    # Other Waste Items
+    "toothbrush", "scissors", "vase", "potted plant",
+    # Sports & Toys (potential waste)
+    "frisbee", "sports ball", "kite", "teddy bear"
+}
+
 try:
     # wrap the load in a safe_globals context to be extra sure
     with safe_globals([DetectionModel, container.Sequential]):
@@ -71,15 +86,23 @@ async def predict(file: UploadFile = File(...)):
         logger.info(f"Processed image: {image_array.shape}, found {len(results)} result(s)")
         
         detections = []
+        filtered_out = []
         for r in results:
             if r.boxes is not None:
                 for box in r.boxes:
                     class_id = int(box.cls[0])
                     label = model.names[class_id]
                     conf = float(box.conf[0])
-                    detections.append({"label": label, "confidence": conf})
+                    
+                    # Filter: only keep waste-relevant items
+                    if label in WASTE_CATEGORIES:
+                        detections.append({"label": label, "confidence": conf})
+                    else:
+                        filtered_out.append(label)
 
-        logger.info(f"Detected {len(detections)} objects: {[d['label'] for d in detections]}")
+        logger.info(f"Detected {len(detections)} waste items: {[d['label'] for d in detections]}")
+        if filtered_out:
+            logger.info(f"Filtered out non-waste: {filtered_out}")
         return {"objects": detections}
         
     except HTTPException:

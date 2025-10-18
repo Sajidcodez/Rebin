@@ -5,18 +5,22 @@ import type React from "react"
 import { useState, useRef, useEffect } from "react"
 import { Button } from "../ui/button"
 import { Icons } from "../ui/icons"
+import { apiClient } from "../../lib/api"
+import { ItemDetection } from "../../types"
 
 interface WebcamScannerProps {
   isScanning: boolean
   setIsScanning: (value: boolean) => void
   onImageUpload: (imageData: string) => void
+  onDetectionResults?: (results: ItemDetection[]) => void
 }
 
-export function WebcamScanner({ isScanning, setIsScanning, onImageUpload }: WebcamScannerProps) {
+export function WebcamScanner({ isScanning, setIsScanning, onImageUpload, onDetectionResults }: WebcamScannerProps) {
   const [stream, setStream] = useState<MediaStream | null>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
   const startScanning = async () => {
     try {
@@ -115,6 +119,51 @@ export function WebcamScanner({ isScanning, setIsScanning, onImageUpload }: Webc
     console.log("[Scanner] Captured frame size:", canvas.width, canvas.height, "dataUrl length:", dataUrl.length)
     return dataUrl
   }
+
+  // Convert base64 dataURL to File object
+  const dataURLtoFile = (dataUrl: string, filename: string): File => {
+    const arr = dataUrl.split(',')
+    const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/jpeg'
+    const bstr = atob(arr[1])
+    let n = bstr.length
+    const u8arr = new Uint8Array(n)
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n)
+    }
+    return new File([u8arr], filename, { type: mime })
+  }
+
+  // Auto-capture and send to backend every 5 seconds
+  const performAutoCapture = async () => {
+    const dataUrl = captureFrame()
+    if (!dataUrl) return
+
+    try {
+      const file = dataURLtoFile(dataUrl, `frame-${Date.now()}.jpg`)
+      console.log("[Scanner] Sending frame to backend...")
+      const response = await apiClient.infer(file)
+      console.log("[Scanner] Detection results:", response.items)
+      onDetectionResults?.(response.items)
+    } catch (error) {
+      console.error("[Scanner] Auto-capture failed:", error)
+    }
+  }
+
+  // Start auto-capture loop when scanning
+  useEffect(() => {
+    if (isScanning && stream) {
+      console.log("[Scanner] Starting auto-capture every 5 seconds")
+      intervalRef.current = setInterval(performAutoCapture, 5000)
+      
+      return () => {
+        if (intervalRef.current) {
+          console.log("[Scanner] Stopping auto-capture")
+          clearInterval(intervalRef.current)
+          intervalRef.current = null
+        }
+      }
+    }
+  }, [isScanning, stream])
 
   // Cleanup on unmount
   useEffect(() => {
