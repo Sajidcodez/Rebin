@@ -26,18 +26,28 @@ def create_app() -> FastAPI:
         redoc_url="/redoc" if os.getenv("ENVIRONMENT") != "production" else None
     )
 
-    # Security middleware
+    # Security middleware - Allow Render.com hosts
     app.add_middleware(
         TrustedHostMiddleware, 
-        allowed_hosts=["localhost", "127.0.0.1", "*.your-domain.com"]
+        allowed_hosts=["localhost", "127.0.0.1", "*.onrender.com", "*.your-domain.com"]
     )
 
-    # CORS middleware
+    # CORS middleware - Allow multiple origins for development
+    allowed_origins = [
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "http://localhost:5174",  # Vite alternate port
+    ]
+    
+    # Add production frontend origin if set
+    if FRONTEND_ORIGIN:
+        allowed_origins.append(FRONTEND_ORIGIN)
+    
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=[FRONTEND_ORIGIN] if FRONTEND_ORIGIN else ["http://localhost:5173"],
+        allow_origins=allowed_origins,
         allow_credentials=True,
-        allow_methods=["GET", "POST", "PUT", "DELETE"],
+        allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
         allow_headers=["*"],
     )
 

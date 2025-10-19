@@ -191,7 +191,7 @@ export function WebcamScanner({ isScanning, setIsScanning, onImageUpload, onDete
   return (
     <div className="h-full bg-black border border-gray-800 rounded-lg overflow-hidden flex flex-col">
       {/* Header */}
-      <div className="bg-gray-900 border-b border-gray-800 px-4 sm:px-6 py-4 flex items-center justify-between">
+      <div className="bg-gray-900 border-b border-gray-800 px-4 sm:px-6 py-4 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center">
             <Icons.camera className="h-5 w-5 text-primary" />
@@ -212,8 +212,8 @@ export function WebcamScanner({ isScanning, setIsScanning, onImageUpload, onDete
         )}
       </div>
 
-      {/* Video Feed */}
-      <div className="flex-1 relative bg-black flex items-center justify-center min-h-[300px] sm:min-h-[400px]">
+      {/* Video Feed - Fixed size to prevent shifting */}
+      <div className="flex-1 relative bg-black w-full flex items-center justify-center overflow-hidden">
         {!isScanning ? (
           <div className="text-center space-y-4 p-4 sm:p-8">
             <div className="h-16 sm:h-20 w-16 sm:w-20 rounded-full bg-primary/20 flex items-center justify-center mx-auto">
@@ -228,7 +228,7 @@ export function WebcamScanner({ isScanning, setIsScanning, onImageUpload, onDete
           </div>
         ) : (
           <>
-            <video ref={videoRef} autoPlay playsInline muted className="block w-full h-full object-contain bg-black" />
+            <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-contain bg-black" />
             <canvas ref={canvasRef} className="hidden" />
           </>
         )}
@@ -246,7 +246,7 @@ export function WebcamScanner({ isScanning, setIsScanning, onImageUpload, onDete
         )}
       </div>
 
-      <div className="bg-gray-900 border-t border-gray-800 px-4 sm:px-6 py-4">
+      <div className="bg-gray-900 border-t border-gray-800 px-4 sm:px-6 py-4 flex-shrink-0">
         <div className="flex flex-col sm:flex-row gap-3">
           {!isScanning ? (
             <>
