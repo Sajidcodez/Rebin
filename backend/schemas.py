@@ -23,7 +23,7 @@ class ExplainRequest(BaseModel):
     items: List[ExplainItem]
     zip: Optional[str] = Field(default=None)
     policies_json: Optional[Dict[str, Any]] = Field(default=None, description="Policies for ZIP")
-h    personality: Optional[str] = Field(default="friendly", description="Voice personality: friendly, enthusiastic, educational")
+    personality: Optional[str] = Field(default="friendly", description="Voice personality: friendly, enthusiastic, educational")
 
 
 class ItemDecision(BaseModel):
