@@ -6,6 +6,8 @@ from pydantic import BaseModel, Field
 class ItemDetection(BaseModel):
     label: str = Field(..., description="Detected class label")
     confidence: float = Field(..., ge=0.0, le=1.0)
+    bin: Optional[str] = Field(default=None, description="Disposal bin (if refined by Gemini)")
+    explanation: Optional[str] = Field(default=None, description="Explanation (if refined by Gemini)")
 
 
 class InferResponse(BaseModel):
