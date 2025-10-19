@@ -18,8 +18,9 @@
    - **Name:** `rebin-backend`
    - **Branch:** `main` (or `sohi`)
    - **Root Directory:** `backend`
-   - **Runtime:** `Docker`
-   - **Dockerfile Path:** `backend/Dockerfile.render`
+   - **Runtime:** `Python 3`
+   - **Build Command:** `pip install -r requirements.txt`
+   - **Start Command:** `uvicorn main:app --host 0.0.0.0 --port $PORT`
    - **Instance Type:** **Free**
 
 5. Add Environment Variables:

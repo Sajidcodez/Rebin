@@ -15,8 +15,9 @@
 - [ ] Click **"New+ → Web Service"**
 - [ ] Connect GitHub repo
 - [ ] Set **Root Directory:** `backend`
-- [ ] Set **Runtime:** `Docker`  
-- [ ] Set **Dockerfile:** `backend/Dockerfile.render`
+- [ ] Set **Runtime:** `Python 3`  
+- [ ] Set **Build Command:** `pip install -r requirements.txt`
+- [ ] Set **Start Command:** `uvicorn main:app --host 0.0.0.0 --port $PORT`
 - [ ] Choose **FREE** instance
 - [ ] Add env vars:
   - [ ] `OPENROUTER_API_KEY` = your_key

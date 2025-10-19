@@ -23,12 +23,11 @@ git push origin main
 - **Region:** Choose closest to you
 - **Branch:** `main` (or `sohi`)
 - **Root Directory:** `backend`
-- **Runtime:** `Docker`
-- **Dockerfile Path:** `backend/Dockerfile.render`
+- **Runtime:** `Python 3`
 
 **Build & Deploy:**
-- **Build Command:** (leave empty - Docker handles it)
-- **Start Command:** (leave empty - Docker handles it)
+- **Build Command:** `pip install -r requirements.txt`
+- **Start Command:** `uvicorn main:app --host 0.0.0.0 --port $PORT`
 
 **Instance Type:**
 - Free tier is fine for hackathon
