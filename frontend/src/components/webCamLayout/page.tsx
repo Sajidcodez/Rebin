@@ -5,6 +5,7 @@ import { Header } from "../landingPage/header";
 import { Footer } from "../landingPage/footer";
 import { WebcamScanner } from "./webcamScanner"
 import { ScanInfoPanel } from "./scaninfoPanel"
+import { AnalysisResults } from "./analysisResults"
 import { ItemDetection } from "../../types"
 
 export default function SortingPage() {
@@ -135,33 +136,13 @@ export default function SortingPage() {
                 </div>
               </div>
             ) : (
-              // Results State - Fullscreen
-              <div className="w-full max-w-4xl animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div className="bg-gray-900 border border-gray-800 rounded-lg p-8">
-                  <h2 className="text-2xl sm:text-3xl font-bold text-white mb-6">
-                    Analysis Complete! ✨
-                  </h2>
-                  <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-                    <pre className="text-sm text-gray-300 whitespace-pre-wrap overflow-auto max-h-96">
-                      {JSON.stringify(analysisResult, null, 2)}
-                    </pre>
-                  </div>
-                  <div className="flex gap-4 mt-6">
-                    <button
-                      onClick={() => setAnalysisResult(null)}
-                      className="flex-1 px-6 py-3 bg-primary hover:bg-primary/90 text-white font-semibold rounded-lg transition"
-                    >
-                      Scan Another Item
-                    </button>
-                    <button
-                      onClick={handleReset}
-                      className="px-6 py-3 border border-gray-600 hover:bg-gray-800 text-white font-semibold rounded-lg transition"
-                    >
-                      Start Over
-                    </button>
-                  </div>
-                </div>
-              </div>
+              // Results State - Fullscreen with Voice Personalities
+              <AnalysisResults
+                results={analysisResult}
+                confirmedItems={confirmedItems}
+                onScanAnother={() => setAnalysisResult(null)}
+                onReset={handleReset}
+              />
             )}
           </div>
         ) : (

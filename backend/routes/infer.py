@@ -88,6 +88,7 @@ async def infer(
         # Ambiguous labels that need Gemini refinement
         AMBIGUOUS_LABELS = {"bottle", "cup", "bowl", "container"}
         CONFIDENCE_THRESHOLD = 0.7  # Refine if confidence < 70%
+        ENABLE_REFINEMENT = False  # Disabled due to Gemini rate limits
         
         for obj in objects:
             try:
@@ -96,8 +97,8 @@ async def infer(
                 
                 # Check if label needs refinement
                 needs_refinement = (
-                    label.lower() in AMBIGUOUS_LABELS or 
-                    confidence < CONFIDENCE_THRESHOLD
+                    ENABLE_REFINEMENT and  # Only if enabled
+                    (label.lower() in AMBIGUOUS_LABELS or confidence < CONFIDENCE_THRESHOLD)
                 )
                 
                 if needs_refinement:
