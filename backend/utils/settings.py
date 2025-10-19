@@ -6,8 +6,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Application configuration
-FRONTEND_ORIGIN = "http://localhost:5173"
-YOLO_INFER_URL = "http://localhost:9000/predict"
+FRONTEND_ORIGIN = os.environ.get("FRONTEND_ORIGIN", "http://localhost:5173")
+YOLO_INFER_URL = os.environ.get("YOLO_INFER_URL", "http://localhost:9000/predict")
 OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY", "")
 OPENROUTER_MODEL = os.environ.get("OPENROUTER_MODEL", "openai/gpt-4o-mini")
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")

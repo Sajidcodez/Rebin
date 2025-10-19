@@ -10,7 +10,8 @@ import {
   AvatarConfig,
 } from "../types";
 
-const API_BASE_URL ="https://rebin-backend.onrender.com/";
+const API_BASE_URL =
+  (import.meta as any).env?.VITE_API_BASE_URL || "https://rebin-backend.onrender.com";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -36,12 +37,14 @@ export const apiClient = {
   async explain(
     items: { label: string }[],
     zip?: string,
-    policies?: any
+    policies?: any,
+    personality?: string
   ): Promise<ExplainResponse> {
     const response = await api.post("/explain", {
       items,
       zip,
       policies_json: policies,
+      personality: personality || "friendly",
     });
     return response.data;
   },

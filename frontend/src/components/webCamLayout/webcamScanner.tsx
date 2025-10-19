@@ -5,37 +5,59 @@ import type React from "react"
 import { useState, useRef, useEffect } from "react"
 import { Button } from "../ui/button"
 import { Icons } from "../ui/icons"
+import { apiClient } from "../../lib/api"
+import { ItemDetection } from "../../types"
 
 interface WebcamScannerProps {
   isScanning: boolean
   setIsScanning: (value: boolean) => void
   onImageUpload: (imageData: string) => void
+  onDetectionResults?: (results: ItemDetection[]) => void
 }
 
-export function WebcamScanner({ isScanning, setIsScanning, onImageUpload }: WebcamScannerProps) {
+export function WebcamScanner({ isScanning, setIsScanning, onImageUpload, onDetectionResults }: WebcamScannerProps) {
   const [stream, setStream] = useState<MediaStream | null>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const intervalRef = useRef<NodeJS.Timeout | null>(null)
 
   const startScanning = async () => {
     try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment", width: 1280, height: 720 },
-      })
+      // Simple, widely-used pattern with debug logs
+      const constraints: MediaStreamConstraints = { video: true, audio: false }
+      console.log("[Scanner] Requesting camera with constraints:", constraints)
+      const t0 = performance.now()
+      const mediaStream = await navigator.mediaDevices.getUserMedia(constraints)
+      console.log("[Scanner] getUserMedia resolved in", Math.round(performance.now() - t0), "ms")
       setStream(mediaStream)
-      if (videoRef.current) {
-        videoRef.current.srcObject = mediaStream
-      }
-      setIsScanning(true)
+      setIsScanning(true) // ensure <video> mounts before attaching stream
+      const track = mediaStream.getVideoTracks()[0]
+      console.log("[Scanner] Video track:", {
+        label: track?.label,
+        readyState: track?.readyState,
+        settings: track?.getSettings?.(),
+      })
     } catch (error) {
-      console.error("Error accessing webcam:", error)
-      alert("Unable to access camera. Please check permissions or try uploading an image instead.")
+      const err = error as any
+      console.error("[Scanner] Error accessing webcam:", err?.name, err?.message, err)
+      if (err?.name === "NotAllowedError") {
+        alert("Camera permission denied. Allow camera access in the browser and try again.")
+      } else if (err?.name === "NotFoundError") {
+        alert("No camera found. Connect a camera or select a different device in site settings.")
+      } else if (err?.name === "NotReadableError") {
+        alert("Camera is busy in another app (Zoom/Meet). Close it and try again.")
+      } else if (err?.name === "OverconstrainedError") {
+        alert("Requested camera constraints not available. Try default camera.")
+      } else {
+        alert("Unable to access camera. Please check permissions or try uploading an image instead.")
+      }
     }
   }
 
   const stopScanning = () => {
     if (stream) {
+      console.log("[Scanner] Stopping tracks:", stream.getTracks().map(t => ({ kind: t.kind, label: t.label })))
       stream.getTracks().forEach((track) => track.stop())
       setStream(null)
     }
@@ -72,19 +94,76 @@ export function WebcamScanner({ isScanning, setIsScanning, onImageUpload }: Webc
   }
 
   const captureFrame = (): string | null => {
-    if (!videoRef.current || !canvasRef.current) return null
+    if (!videoRef.current || !canvasRef.current) {
+      console.warn("[Scanner] captureFrame called without video/canvas ready")
+      return null
+    }
 
     const video = videoRef.current
     const canvas = canvasRef.current
     canvas.width = video.videoWidth
     canvas.height = video.videoHeight
+    if (!video.videoWidth || !video.videoHeight) {
+      console.warn("[Scanner] Video dimensions are 0; skipping capture")
+      return null
+    }
 
     const ctx = canvas.getContext("2d")
-    if (!ctx) return null
+    if (!ctx) {
+      console.warn("[Scanner] 2D context unavailable")
+      return null
+    }
 
     ctx.drawImage(video, 0, 0)
-    return canvas.toDataURL("image/jpeg", 0.8)
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.8)
+    console.log("[Scanner] Captured frame size:", canvas.width, canvas.height, "dataUrl length:", dataUrl.length)
+    return dataUrl
   }
+
+  // Convert base64 dataURL to File object
+  const dataURLtoFile = (dataUrl: string, filename: string): File => {
+    const arr = dataUrl.split(',')
+    const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/jpeg'
+    const bstr = atob(arr[1])
+    let n = bstr.length
+    const u8arr = new Uint8Array(n)
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n)
+    }
+    return new File([u8arr], filename, { type: mime })
+  }
+
+  // Auto-capture and send to backend every 5 seconds
+  const performAutoCapture = async () => {
+    const dataUrl = captureFrame()
+    if (!dataUrl) return
+
+    try {
+      const file = dataURLtoFile(dataUrl, `frame-${Date.now()}.jpg`)
+      console.log("[Scanner] Sending frame to backend...")
+      const response = await apiClient.infer(file)
+      console.log("[Scanner] Detection results:", response.items)
+      onDetectionResults?.(response.items)
+    } catch (error) {
+      console.error("[Scanner] Auto-capture failed:", error)
+    }
+  }
+
+  // Start auto-capture loop when scanning
+  useEffect(() => {
+    if (isScanning && stream) {
+      console.log("[Scanner] Starting auto-capture every 5 seconds")
+      intervalRef.current = setInterval(performAutoCapture, 5000)
+      
+      return () => {
+        if (intervalRef.current) {
+          console.log("[Scanner] Stopping auto-capture")
+          clearInterval(intervalRef.current)
+          intervalRef.current = null
+        }
+      }
+    }
+  }, [isScanning, stream])
 
   // Cleanup on unmount
   useEffect(() => {
@@ -95,10 +174,24 @@ export function WebcamScanner({ isScanning, setIsScanning, onImageUpload }: Webc
     }
   }, [stream])
 
+  // Attach stream to video element when available and scanning
+  useEffect(() => {
+    if (stream && videoRef.current && isScanning) {
+      console.log("[Scanner] Attaching stream to video element")
+      const video = videoRef.current
+      video.srcObject = stream
+      video.onloadedmetadata = () => {
+        console.log("[Scanner] Video metadata loaded, dimensions:", video.videoWidth, video.videoHeight)
+      }
+      video.onplay = () => console.log("[Scanner] Video started playing")
+      video.play().catch((err) => console.warn("[Scanner] video.play() error (effect)", err))
+    }
+  }, [stream, isScanning])
+
   return (
     <div className="h-full bg-black border border-gray-800 rounded-lg overflow-hidden flex flex-col">
       {/* Header */}
-      <div className="bg-gray-900 border-b border-gray-800 px-4 sm:px-6 py-4 flex items-center justify-between">
+      <div className="bg-gray-900 border-b border-gray-800 px-4 sm:px-6 py-4 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center">
             <Icons.camera className="h-5 w-5 text-primary" />
@@ -119,8 +212,8 @@ export function WebcamScanner({ isScanning, setIsScanning, onImageUpload }: Webc
         )}
       </div>
 
-      {/* Video Feed */}
-      <div className="flex-1 relative bg-black flex items-center justify-center min-h-[300px] sm:min-h-[400px]">
+      {/* Video Feed - Fixed size to prevent shifting */}
+      <div className="flex-1 relative bg-black w-full flex items-center justify-center overflow-hidden">
         {!isScanning ? (
           <div className="text-center space-y-4 p-4 sm:p-8">
             <div className="h-16 sm:h-20 w-16 sm:w-20 rounded-full bg-primary/20 flex items-center justify-center mx-auto">
@@ -135,7 +228,7 @@ export function WebcamScanner({ isScanning, setIsScanning, onImageUpload }: Webc
           </div>
         ) : (
           <>
-            <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
+            <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-contain bg-black" />
             <canvas ref={canvasRef} className="hidden" />
           </>
         )}
@@ -153,7 +246,7 @@ export function WebcamScanner({ isScanning, setIsScanning, onImageUpload }: Webc
         )}
       </div>
 
-      <div className="bg-gray-900 border-t border-gray-800 px-4 sm:px-6 py-4">
+      <div className="bg-gray-900 border-t border-gray-800 px-4 sm:px-6 py-4 flex-shrink-0">
         <div className="flex flex-col sm:flex-row gap-3">
           {!isScanning ? (
             <>
