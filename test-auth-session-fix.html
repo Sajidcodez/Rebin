@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Auth Session Fix Test</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .container {
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      .test-section {
+        margin: 20px 0;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+      }
+      .success {
+        background-color: #d4edda;
+        border-color: #c3e6cb;
+        color: #155724;
+      }
+      .error {
+        background-color: #f8d7da;
+        border-color: #f5c6cb;
+        color: #721c24;
+      }
+      .info {
+        background-color: #d1ecf1;
+        border-color: #bee5eb;
+        color: #0c5460;
+      }
+      button {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        margin: 5px;
+      }
+      button:hover {
+        background-color: #0056b3;
+      }
+      button:disabled {
+        background-color: #6c757d;
+        cursor: not-allowed;
+      }
+      .log {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+        padding: 10px;
+        margin: 10px 0;
+        font-family: monospace;
+        font-size: 12px;
+        max-height: 200px;
+        overflow-y: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🔧 Auth Session Fix Test</h1>
+      <p>
+        This page tests the authentication session fix to ensure the "Auth
+        session missing!" error is resolved.
+      </p>
+
+      <div class="test-section info">
+        <h3>📋 Test Instructions</h3>
+        <ol>
+          <li>
+            Make sure your Supabase environment variables are properly
+            configured
+          </li>
+          <li>Click "Test Supabase Connection" to verify the connection</li>
+          <li>Try registering a new user to test the session handling</li>
+          <li>Check the console logs for any "Auth session missing!" errors</li>
+        </ol>
+      </div>
+
+      <div class="test-section">
+        <h3>🔗 Supabase Connection Test</h3>
+        <button onclick="testSupabaseConnection()">
+          Test Supabase Connection
+        </button>
+        <div id="connection-result"></div>
+      </div>
+
+      <div class="test-section">
+        <h3>👤 User Registration Test</h3>
+        <form id="registration-form">
+          <div style="margin: 10px 0">
+            <label>Email:</label><br />
+            <input
+              type="email"
+              id="email"
+              placeholder="test@example.com"
+              style="width: 100%; padding: 5px; margin: 5px 0"
+            />
+          </div>
+          <div style="margin: 10px 0">
+            <label>Password:</label><br />
+            <input
+              type="password"
+              id="password"
+              placeholder="password123"
+              style="width: 100%; padding: 5px; margin: 5px 0"
+            />
+          </div>
+          <div style="margin: 10px 0">
+            <label>First Name:</label><br />
+            <input
+              type="text"
+              id="firstName"
+              placeholder="John"
+              style="width: 100%; padding: 5px; margin: 5px 0"
+            />
+          </div>
+          <div style="margin: 10px 0">
+            <label>Last Name:</label><br />
+            <input
+              type="text"
+              id="lastName"
+              placeholder="Doe"
+              style="width: 100%; padding: 5px; margin: 5px 0"
+            />
+          </div>
+          <button type="submit">Test Registration</button>
+        </form>
+        <div id="registration-result"></div>
+      </div>
+
+      <div class="test-section">
+        <h3>📝 Test Logs</h3>
+        <button onclick="clearLogs()">Clear Logs</button>
+        <div id="logs" class="log"></div>
+      </div>
+    </div>
+
+    <script type="module">
+      import { createClient } from "https://cdn.skypack.dev/@supabase/supabase-js@2";
+
+      // Get environment variables from the page (you'll need to set these)
+      const supabaseUrl = "https://cikihoznjxwhwqmnifvy.supabase.co/";
+      const supabaseKey =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNpa2lob3puanh3aHdxbW5pZnZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA2OTEyMDksImV4cCI6MjA3NjI2NzIwOX0.C4ED1keyxTUFULpI2zoUIBi-GtZTpBXhFTXXPM8MtQ8";
+
+      const supabase = createClient(supabaseUrl, supabaseKey);
+
+      function log(message, type = "info") {
+        const logsDiv = document.getElementById("logs");
+        const timestamp = new Date().toLocaleTimeString();
+        const logEntry = document.createElement("div");
+        logEntry.innerHTML = `[${timestamp}] ${message}`;
+        logEntry.style.color =
+          type === "error" ? "red" : type === "success" ? "green" : "black";
+        logsDiv.appendChild(logEntry);
+        logsDiv.scrollTop = logsDiv.scrollHeight;
+      }
+
+      window.testSupabaseConnection = async function () {
+        const resultDiv = document.getElementById("connection-result");
+        resultDiv.innerHTML = "<p>Testing connection...</p>";
+
+        try {
+          log("Testing Supabase connection...");
+          const { data, error } = await supabase.auth.getSession();
+
+          if (error) {
+            throw error;
+          }
+
+          resultDiv.innerHTML =
+            '<div class="success">✅ Supabase connection successful!</div>';
+          log("Supabase connection successful", "success");
+        } catch (error) {
+          resultDiv.innerHTML = `<div class="error">❌ Connection failed: ${error.message}</div>`;
+          log(`Connection failed: ${error.message}`, "error");
+        }
+      };
+
+      window.clearLogs = function () {
+        document.getElementById("logs").innerHTML = "";
+      };
+
+      // Test registration form
+      document
+        .getElementById("registration-form")
+        .addEventListener("submit", async function (e) {
+          e.preventDefault();
+
+          const resultDiv = document.getElementById("registration-result");
+          resultDiv.innerHTML = "<p>Testing registration...</p>";
+
+          const email = document.getElementById("email").value;
+          const password = document.getElementById("password").value;
+          const firstName = document.getElementById("firstName").value;
+          const lastName = document.getElementById("lastName").value;
+
+          try {
+            log(`Attempting registration for: ${email}`);
+
+            // Test the registration flow
+            const { data, error } = await supabase.auth.signUp({
+              email: email,
+              password: password,
+              options: {
+                data: {
+                  first_name: firstName,
+                  last_name: lastName,
+                  full_name: `${firstName} ${lastName}`.trim(),
+                },
+              },
+            });
+
+            if (error) {
+              throw error;
+            }
+
+            if (data.user) {
+              log(`User created successfully: ${data.user.id}`, "success");
+
+              // Test creating user profile (this is where the "Auth session missing!" error was occurring)
+              try {
+                const { error: insertError } = await supabase
+                  .from("users")
+                  .insert({
+                    id: data.user.id,
+                    email: data.user.email || "",
+                    full_name: `${firstName} ${lastName}`.trim(),
+                    metadata: {
+                      first_name: firstName,
+                      last_name: lastName,
+                    },
+                    email_verified: data.user.email_confirmed_at ? true : false,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
+                  });
+
+                if (insertError) {
+                  log(
+                    `Profile creation warning: ${insertError.message}`,
+                    "error"
+                  );
+                } else {
+                  log("User profile created successfully", "success");
+                }
+              } catch (profileError) {
+                log(`Profile creation error: ${profileError.message}`, "error");
+              }
+
+              if (data.session) {
+                resultDiv.innerHTML =
+                  '<div class="success">✅ Registration successful with immediate session!</div>';
+                log("Registration completed with immediate session", "success");
+              } else {
+                resultDiv.innerHTML =
+                  '<div class="info">ℹ️ Registration successful - email confirmation required</div>';
+                log(
+                  "Registration completed - email confirmation required",
+                  "info"
+                );
+              }
+            }
+          } catch (error) {
+            resultDiv.innerHTML = `<div class="error">❌ Registration failed: ${error.message}</div>`;
+            log(`Registration failed: ${error.message}`, "error");
+          }
+        });
+
+      // Initial connection test
+      log("Auth Session Fix Test initialized");
+      log("Ready to test authentication flow...");
+    </script>
+  </body>
+</html>

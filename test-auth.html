@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Authentication Test</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .test-section {
+        background: white;
+        padding: 20px;
+        margin: 20px 0;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .test-button {
+        background: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 4px;
+        cursor: pointer;
+        margin: 5px;
+      }
+      .test-button:hover {
+        background: #0056b3;
+      }
+      .status {
+        padding: 10px;
+        margin: 10px 0;
+        border-radius: 4px;
+      }
+      .success {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+      .error {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+      .info {
+        background: #d1ecf1;
+        color: #0c5460;
+        border: 1px solid #bee5eb;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🔐 ReBin Pro Authentication Test</h1>
+
+    <div class="test-section">
+      <h2>🚀 Quick Test Links</h2>
+      <p>
+        Click these links to test different parts of the authentication flow:
+      </p>
+
+      <a href="http://localhost:5173" class="test-button">🏠 Landing Page</a>
+      <a href="http://localhost:5173/login" class="test-button"
+        >🔑 Login Page</a
+      >
+      <a href="http://localhost:5173/register" class="test-button"
+        >📝 Register Page</a
+      >
+      <a href="http://localhost:5173/dashboard" class="test-button"
+        >📊 Dashboard (Protected)</a
+      >
+      <a href="http://localhost:5173/sorting" class="test-button"
+        >📷 Sorting (Protected)</a
+      >
+    </div>
+
+    <div class="test-section">
+      <h2>✅ Test Checklist</h2>
+      <div id="test-results">
+        <div class="info">
+          <strong>Instructions:</strong> Open each link above and verify the
+          behavior described below.
+        </div>
+      </div>
+    </div>
+
+    <div class="test-section">
+      <h2>📋 Expected Behaviors</h2>
+
+      <h3>🏠 Landing Page (/)</h3>
+      <ul>
+        <li>Should load the ReBin Pro landing page</li>
+        <li>Should show "Sign In" and "Get Started" buttons</li>
+        <li>Should have the earth background animation</li>
+      </ul>
+
+      <h3>🔑 Login Page (/login)</h3>
+      <ul>
+        <li>Should show login form with email and password fields</li>
+        <li>Should have "Sign In" button</li>
+        <li>Should have link to register page</li>
+        <li>If you're already logged in, should redirect to dashboard</li>
+      </ul>
+
+      <h3>📝 Register Page (/register)</h3>
+      <ul>
+        <li>Should show registration form with all required fields</li>
+        <li>Should have password strength indicator</li>
+        <li>Should have "Create Account" button</li>
+        <li>Should have link to login page</li>
+      </ul>
+
+      <h3>📊 Dashboard (/dashboard) - Protected Route</h3>
+      <ul>
+        <li>
+          <strong>If NOT logged in:</strong> Should redirect to login page
+        </li>
+        <li><strong>If logged in:</strong> Should show dashboard content</li>
+      </ul>
+
+      <h3>📷 Sorting (/sorting) - Protected Route</h3>
+      <ul>
+        <li>
+          <strong>If NOT logged in:</strong> Should redirect to login page
+        </li>
+        <li><strong>If logged in:</strong> Should show sorting interface</li>
+      </ul>
+    </div>
+
+    <div class="test-section">
+      <h2>🧪 Manual Test Steps</h2>
+
+      <h3>Test 1: Registration Flow</h3>
+      <ol>
+        <li>
+          Go to <a href="http://localhost:5173/register">Register Page</a>
+        </li>
+        <li>
+          Fill out the form with test data:
+          <ul>
+            <li>First Name: Test</li>
+            <li>Last Name: User</li>
+            <li>Email: test@example.com</li>
+            <li>Password: TestPass123!</li>
+            <li>Confirm Password: TestPass123!</li>
+            <li>Check "I agree to terms"</li>
+          </ul>
+        </li>
+        <li>Click "Create Account"</li>
+        <li>
+          <strong>Expected:</strong> Success message and redirect to dashboard
+          (if email confirmation is OFF) or login page with verification message
+          (if email confirmation is ON)
+        </li>
+      </ol>
+
+      <h3>Test 2: Login Flow</h3>
+      <ol>
+        <li>Go to <a href="http://localhost:5173/login">Login Page</a></li>
+        <li>
+          Enter credentials:
+          <ul>
+            <li>Email: test@example.com</li>
+            <li>Password: TestPass123!</li>
+          </ul>
+        </li>
+        <li>Click "Sign In"</li>
+        <li>
+          <strong>Expected:</strong> Success message and redirect to dashboard
+        </li>
+      </ol>
+
+      <h3>Test 3: Protected Routes</h3>
+      <ol>
+        <li>
+          While logged out, try to access
+          <a href="http://localhost:5173/dashboard">Dashboard</a>
+        </li>
+        <li><strong>Expected:</strong> Should redirect to login page</li>
+        <li>Log in successfully</li>
+        <li>Try to access dashboard again</li>
+        <li><strong>Expected:</strong> Should show dashboard content</li>
+      </ol>
+    </div>
+
+    <div class="test-section">
+      <h2>🔧 Troubleshooting</h2>
+
+      <h3>If Registration Doesn't Work:</h3>
+      <ul>
+        <li>Check browser console (F12) for errors</li>
+        <li>Verify Supabase environment variables are set</li>
+        <li>Check if Supabase project is active</li>
+      </ul>
+
+      <h3>If Login Doesn't Work:</h3>
+      <ul>
+        <li>Make sure you registered successfully first</li>
+        <li>Check if email verification is required</li>
+        <li>Verify credentials are correct</li>
+      </ul>
+
+      <h3>If Protected Routes Don't Work:</h3>
+      <ul>
+        <li>Check if you're actually logged in</li>
+        <li>Look for authentication errors in console</li>
+        <li>Try refreshing the page</li>
+      </ul>
+    </div>
+
+    <div class="test-section">
+      <h2>📞 Need Help?</h2>
+      <p>If you encounter any issues:</p>
+      <ul>
+        <li>Check the browser console (F12) for error messages</li>
+        <li>Verify your Supabase project is set up correctly</li>
+        <li>Make sure environment variables are configured</li>
+        <li>
+          Check the <code>SUPABASE_SETUP.md</code> file for detailed
+          instructions
+        </li>
+      </ul>
+    </div>
+
+    <script>
+      // Simple status checker
+      function checkServerStatus() {
+        fetch("http://localhost:5173")
+          .then((response) => {
+            if (response.ok) {
+              document.getElementById("test-results").innerHTML =
+                '<div class="success">✅ Development server is running on http://localhost:5173</div>';
+            } else {
+              document.getElementById("test-results").innerHTML =
+                '<div class="error">❌ Server responded with error: ' +
+                response.status +
+                "</div>";
+            }
+          })
+          .catch((error) => {
+            document.getElementById("test-results").innerHTML =
+              '<div class="error">❌ Cannot connect to development server. Make sure it\'s running on http://localhost:5173</div>';
+          });
+      }
+
+      // Check server status when page loads
+      checkServerStatus();
+    </script>
+  </body>
+</html>
+

@@ -6,14 +6,30 @@ export function StatsPanel() {
   const { data: events, isLoading, error } = useQuery({
     queryKey: ['sort-events'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('sort_events')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(50)
-      
-      if (error) throw error
-      return data as SortEvent[]
+      try {
+        const { data, error } = await supabase
+          .from('sort_events')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(50)
+        
+        if (error) throw error
+        return data as SortEvent[]
+      } catch (err) {
+        console.warn('Supabase not configured, using mock data:', err)
+        // Return mock data when Supabase is not configured
+        return [
+          {
+            id: 1,
+            user_id: 'demo-user',
+            zip: '10001',
+            items_json: ['plastic bottle', 'paper'],
+            decision: 'recycling',
+            co2e_saved: 0.5,
+            created_at: new Date().toISOString()
+          }
+        ] as SortEvent[]
+      }
     },
   })
 

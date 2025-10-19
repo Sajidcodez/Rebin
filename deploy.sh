@@ -1,11 +1,9 @@
 #!/bin/bash
 
-# ReBin Pro Production Deployment Script
-# This script deploys the application to production with enhanced security measures
+# ReBin Pro Deployment Script
+# This script handles the complete deployment of ReBin Pro to production
 
 set -e  # Exit on any error
-
-echo "🚀 Deploying ReBin Pro to Production..."
 
 # Colors for output
 RED='\033[0;31m'
@@ -14,282 +12,302 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Function to print colored output
-print_status() {
+# Configuration
+PROJECT_NAME="rebin-pro"
+BACKEND_IMAGE="rebin-pro/backend"
+FRONTEND_IMAGE="rebin-pro/frontend"
+REGISTRY="your-registry.com"
+ENVIRONMENT=${1:-production}
+
+# Functions
+log_info() {
     echo -e "${BLUE}[INFO]${NC} $1"
 }
 
-print_success() {
+log_success() {
     echo -e "${GREEN}[SUCCESS]${NC} $1"
 }
 
-print_warning() {
+log_warning() {
     echo -e "${YELLOW}[WARNING]${NC} $1"
 }
 
-print_error() {
+log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-# Pre-deployment security checks
-pre_deploy_checks() {
-    print_status "Running pre-deployment security checks..."
+check_dependencies() {
+    log_info "Checking dependencies..."
     
-    # Check if .env exists and has required variables
-    if [ ! -f ".env" ]; then
-        print_error ".env file not found. Please create it from env.example"
+    # Check if Docker is installed
+    if ! command -v docker &> /dev/null; then
+        log_error "Docker is not installed. Please install Docker first."
         exit 1
     fi
     
-    # Check for required environment variables
-    required_vars=("SUPABASE_URL" "SUPABASE_ANON_KEY" "SUPABASE_SERVICE_ROLE_KEY" "OPENROUTER_API_KEY" "ELEVENLABS_API_KEY")
+    # Check if Docker Compose is installed
+    if ! command -v docker-compose &> /dev/null; then
+        log_error "Docker Compose is not installed. Please install Docker Compose first."
+        exit 1
+    fi
+    
+    # Check if kubectl is installed (for Kubernetes deployment)
+    if ! command -v kubectl &> /dev/null; then
+        log_warning "kubectl is not installed. Kubernetes deployment will be skipped."
+    fi
+    
+    log_success "Dependencies check completed"
+}
+
+validate_environment() {
+    log_info "Validating environment configuration..."
+    
+    # Check if environment file exists
+    if [ ! -f ".env.${ENVIRONMENT}" ]; then
+        log_error "Environment file .env.${ENVIRONMENT} not found"
+        exit 1
+    fi
+    
+    # Check required environment variables
+    source ".env.${ENVIRONMENT}"
+    
+    required_vars=(
+        "SUPABASE_URL"
+        "SUPABASE_SERVICE_ROLE_KEY"
+        "OPENROUTER_API_KEY"
+        "ELEVENLABS_API_KEY"
+    )
     
     for var in "${required_vars[@]}"; do
-        if ! grep -q "^${var}=" .env || grep -q "^${var}=your_" .env; then
-            print_error "Please set ${var} in your .env file with actual values"
+        if [ -z "${!var}" ]; then
+            log_error "Required environment variable $var is not set"
             exit 1
         fi
     done
     
-    # Check for production-specific variables
-    if ! grep -q "^FRONTEND_ORIGIN=" .env || grep -q "^FRONTEND_ORIGIN=https://your-domain.com" .env; then
-        print_error "Please set FRONTEND_ORIGIN in your .env file with your production domain"
+    log_success "Environment validation completed"
+}
+
+run_tests() {
+    log_info "Running tests..."
+    
+    # Backend tests
+    log_info "Running backend tests..."
+    cd backend
+    if ! python -m pytest tests/ -v --cov=. --cov-report=html; then
+        log_error "Backend tests failed"
+        exit 1
+    fi
+    cd ..
+    
+    # Frontend tests
+    log_info "Running frontend tests..."
+    cd frontend
+    if ! npm test -- --coverage --watchAll=false; then
+        log_error "Frontend tests failed"
+        exit 1
+    fi
+    cd ..
+    
+    log_success "All tests passed"
+}
+
+build_images() {
+    log_info "Building Docker images..."
+    
+    # Build backend image
+    log_info "Building backend image..."
+    docker build -t ${BACKEND_IMAGE}:latest -t ${BACKEND_IMAGE}:${ENVIRONMENT} ./backend
+    
+    # Build frontend image
+    log_info "Building frontend image..."
+    docker build -t ${FRONTEND_IMAGE}:latest -t ${FRONTEND_IMAGE}:${ENVIRONMENT} ./frontend
+    
+    log_success "Docker images built successfully"
+}
+
+push_images() {
+    log_info "Pushing images to registry..."
+    
+    # Tag images for registry
+    docker tag ${BACKEND_IMAGE}:latest ${REGISTRY}/${BACKEND_IMAGE}:latest
+    docker tag ${BACKEND_IMAGE}:${ENVIRONMENT} ${REGISTRY}/${BACKEND_IMAGE}:${ENVIRONMENT}
+    docker tag ${FRONTEND_IMAGE}:latest ${REGISTRY}/${FRONTEND_IMAGE}:latest
+    docker tag ${FRONTEND_IMAGE}:${ENVIRONMENT} ${REGISTRY}/${FRONTEND_IMAGE}:${ENVIRONMENT}
+    
+    # Push images
+    docker push ${REGISTRY}/${BACKEND_IMAGE}:latest
+    docker push ${REGISTRY}/${BACKEND_IMAGE}:${ENVIRONMENT}
+    docker push ${REGISTRY}/${FRONTEND_IMAGE}:latest
+    docker push ${REGISTRY}/${FRONTEND_IMAGE}:${ENVIRONMENT}
+    
+    log_success "Images pushed to registry"
+}
+
+deploy_database() {
+    log_info "Deploying database migrations..."
+    
+    # Run database migrations
+    cd database
+    if ! python migrate.py; then
+        log_error "Database migration failed"
+        exit 1
+    fi
+    cd ..
+    
+    log_success "Database migrations completed"
+}
+
+deploy_cloudflare_worker() {
+    log_info "Deploying Cloudflare Worker..."
+    
+    cd cloudflare-worker
+    
+    # Install dependencies
+    npm install
+    
+    # Deploy worker
+    if ! npx wrangler deploy; then
+        log_error "Cloudflare Worker deployment failed"
         exit 1
     fi
     
-    # Validate environment variables format
-    if grep -q "your_" .env; then
-        print_error "Please replace all placeholder values (your_*) in .env with actual values"
-        exit 1
-    fi
+    cd ..
     
-    print_success "Pre-deployment checks passed"
+    log_success "Cloudflare Worker deployed"
 }
 
-# Security scanning
-security_scan() {
-    print_status "Running security scans..."
+deploy_application() {
+    log_info "Deploying application..."
     
-    # Check if trivy is available for security scanning
-    if command -v trivy &> /dev/null; then
-        print_status "Running Trivy security scan on production images..."
-        
-        # Build production images first
-        docker-compose -f docker-compose.prod.yml build --no-cache
-        
-        # Scan each service
-        services=("backend" "frontend" "cv-mock")
-        for service in "${services[@]}"; do
-            print_status "Scanning $service image..."
-            image_name=$(docker-compose -f docker-compose.prod.yml config | grep -A 5 "services:" | grep -A 5 "$service:" | grep "build:" | awk '{print $2}' || echo "rebin-1_${service}")
-            trivy image --exit-code 1 --severity HIGH,CRITICAL "$image_name" || print_warning "Security scan found issues in $service. Please review."
-        done
+    # Deploy using Docker Compose
+    if [ "$ENVIRONMENT" = "production" ]; then
+        docker-compose -f docker-compose.prod.yml up -d
     else
-        print_warning "Trivy not installed. Skipping security scan. Install with: brew install trivy"
+        docker-compose -f docker-compose.yml up -d
     fi
-}
-
-# Backup existing deployment
-backup_deployment() {
-    print_status "Creating backup of existing deployment..."
-    
-    if docker-compose -f docker-compose.prod.yml ps | grep -q "Up"; then
-        backup_dir="backups/$(date +%Y%m%d_%H%M%S)"
-        mkdir -p "$backup_dir"
-        
-        # Export current environment
-        cp .env "$backup_dir/"
-        
-        # Save current images
-        docker-compose -f docker-compose.prod.yml config > "$backup_dir/docker-compose.prod.yml"
-        
-        print_success "Backup created in $backup_dir"
-    else
-        print_status "No existing deployment found, skipping backup"
-    fi
-}
-
-# Deploy to production
-deploy() {
-    print_status "Deploying to production..."
-    
-    # Stop existing containers gracefully
-    print_status "Stopping existing containers..."
-    docker-compose -f docker-compose.prod.yml down --timeout 30
-    
-    # Build and start production containers
-    print_status "Building production images..."
-    docker-compose -f docker-compose.prod.yml build --no-cache --parallel
-    
-    print_status "Starting production services..."
-    docker-compose -f docker-compose.prod.yml up -d
     
     # Wait for services to be healthy
-    print_status "Waiting for services to be healthy..."
-    sleep 60
+    log_info "Waiting for services to be healthy..."
+    sleep 30
     
     # Check service health
-    unhealthy_services=$(docker-compose -f docker-compose.prod.yml ps | grep "unhealthy" | wc -l)
-    if [ "$unhealthy_services" -gt 0 ]; then
-        print_error "Some services are unhealthy. Check logs with: docker-compose -f docker-compose.prod.yml logs"
-        docker-compose -f docker-compose.prod.yml ps
+    if ! docker-compose ps | grep -q "Up (healthy)"; then
+        log_error "Some services are not healthy"
+        docker-compose logs
         exit 1
     fi
     
-    print_success "Deployment completed successfully!"
+    log_success "Application deployed successfully"
 }
 
-# Post-deployment verification
-post_deploy_verification() {
-    print_status "Running post-deployment verification..."
+deploy_monitoring() {
+    log_info "Deploying monitoring stack..."
     
-    # Check if all services are running
-    running_services=$(docker-compose -f docker-compose.prod.yml ps | grep "Up" | wc -l)
-    expected_services=3
+    # Deploy monitoring services
+    docker-compose -f docker-compose.monitoring.yml up -d
     
-    if [ "$running_services" -ne "$expected_services" ]; then
-        print_error "Expected $expected_services services to be running, but found $running_services"
-        docker-compose -f docker-compose.prod.yml ps
-        exit 1
-    fi
+    log_success "Monitoring stack deployed"
+}
+
+run_health_checks() {
+    log_info "Running health checks..."
     
-    # Test health endpoints
-    print_status "Testing health endpoints..."
-    
-    # Test backend health
-    if curl -f -s http://localhost:8000/health > /dev/null; then
-        print_success "Backend health check passed"
+    # Get the application URL
+    if [ "$ENVIRONMENT" = "production" ]; then
+        APP_URL="https://your-production-domain.com"
     else
-        print_error "Backend health check failed"
+        APP_URL="http://localhost:3000"
+    fi
+    
+    # Check backend health
+    if ! curl -f "${APP_URL}/api/health" > /dev/null 2>&1; then
+        log_error "Backend health check failed"
         exit 1
     fi
     
-    # Test frontend health
-    if curl -f -s http://localhost:80/health > /dev/null; then
-        print_success "Frontend health check passed"
-    else
-        print_error "Frontend health check failed"
+    # Check frontend
+    if ! curl -f "${APP_URL}" > /dev/null 2>&1; then
+        log_error "Frontend health check failed"
         exit 1
     fi
     
-    # Test CV service health
-    if curl -f -s http://localhost:9000/health > /dev/null; then
-        print_success "CV service health check passed"
-    else
-        print_error "CV service health check failed"
-        exit 1
-    fi
-    
-    print_success "All health checks passed"
+    log_success "Health checks passed"
 }
 
-# Show deployment information
-show_deployment_info() {
-    print_status "Deployment Information:"
-    echo ""
-    echo "🌐 Frontend: http://your-domain.com (or configured FRONTEND_ORIGIN)"
-    echo "🔧 Backend API: http://your-domain.com:8000"
-    echo "📚 Backend Docs: http://your-domain.com:8000/docs"
-    echo "🤖 CV Service: http://your-domain.com:9000"
-    echo ""
-    echo "📊 Service Status:"
-    docker-compose -f docker-compose.prod.yml ps
-    echo ""
-    echo "📝 View logs: docker-compose -f docker-compose.prod.yml logs -f"
-    echo "🛑 Stop services: docker-compose -f docker-compose.prod.yml down"
-    echo "🔄 Restart service: docker-compose -f docker-compose.prod.yml restart <service-name>"
-}
-
-# Rollback function
-rollback() {
-    print_status "Rolling back deployment..."
-    
-    # Find latest backup
-    latest_backup=$(ls -t backups/ | head -1)
-    
-    if [ -z "$latest_backup" ]; then
-        print_error "No backup found for rollback"
-        exit 1
-    fi
-    
-    print_status "Rolling back to backup: $latest_backup"
-    
-    # Stop current deployment
-    docker-compose -f docker-compose.prod.yml down
-    
-    # Restore environment
-    cp "backups/$latest_backup/.env" .env
-    
-    # Restart with previous configuration
-    docker-compose -f docker-compose.prod.yml up -d
-    
-    print_success "Rollback completed"
-}
-
-# Cleanup function
 cleanup() {
-    print_status "Cleaning up old images and containers..."
+    log_info "Cleaning up..."
     
-    # Remove unused images
+    # Remove old images
     docker image prune -f
     
     # Remove unused volumes
     docker volume prune -f
     
-    # Remove unused networks
-    docker network prune -f
-    
-    print_success "Cleanup completed"
+    log_success "Cleanup completed"
 }
 
-# Main deployment function
+send_notification() {
+    log_info "Sending deployment notification..."
+    
+    # Send notification to Slack/Teams/etc.
+    # This is a placeholder - implement your notification system
+    echo "Deployment to ${ENVIRONMENT} completed successfully at $(date)" > deployment.log
+    
+    log_success "Notification sent"
+}
+
+# Main deployment flow
 main() {
-    echo "🎯 ReBin Pro - Production Deployment"
-    echo "===================================="
+    log_info "Starting ReBin Pro deployment to ${ENVIRONMENT}..."
     
-    pre_deploy_checks
-    security_scan
-    backup_deployment
-    deploy
-    post_deploy_verification
-    show_deployment_info
+    check_dependencies
+    validate_environment
+    run_tests
+    build_images
+    push_images
+    deploy_database
+    deploy_cloudflare_worker
+    deploy_application
+    deploy_monitoring
+    run_health_checks
+    cleanup
+    send_notification
     
-    echo ""
-    print_success "Production deployment completed successfully! 🎉"
-    echo ""
-    echo "🔒 Security Features Enabled:"
-    echo "  ✅ Non-root users in all containers"
-    echo "  ✅ Read-only filesystems where possible"
-    echo "  ✅ No new privileges security option"
-    echo "  ✅ Resource limits and reservations"
-    echo "  ✅ Network isolation with custom subnet"
-    echo "  ✅ Enhanced security headers"
-    echo "  ✅ Rate limiting and DDoS protection"
-    echo "  ✅ Comprehensive logging and monitoring"
-    echo ""
-    echo "📋 Production Commands:"
-    echo "  docker-compose -f docker-compose.prod.yml logs -f    - View logs"
-    echo "  docker-compose -f docker-compose.prod.yml ps         - Check status"
-    echo "  docker-compose -f docker-compose.prod.yml down       - Stop services"
-    echo "  ./deploy.sh rollback                                 - Rollback to previous version"
-    echo "  ./deploy.sh cleanup                                  - Clean up old images"
-    echo ""
-    echo "⚠️  Remember to:"
-    echo "  - Set up SSL/TLS certificates"
-    echo "  - Configure firewall rules"
-    echo "  - Set up monitoring and alerting"
-    echo "  - Regular security updates"
+    log_success "ReBin Pro deployment completed successfully!"
+    log_info "Application is available at: https://your-domain.com"
+    log_info "API Documentation: https://your-domain.com/docs"
+    log_info "Monitoring Dashboard: https://your-domain.com/grafana"
 }
 
-# Handle command line arguments
+# Handle script arguments
 case "${1:-}" in
-    "rollback")
-        rollback
+    "test")
+        log_info "Running tests only..."
+        check_dependencies
+        run_tests
         ;;
-    "cleanup")
-        cleanup
+    "build")
+        log_info "Building images only..."
+        check_dependencies
+        build_images
+        ;;
+    "deploy")
+        log_info "Deploying application only..."
+        check_dependencies
+        validate_environment
+        deploy_application
+        ;;
+    "full")
+        main
         ;;
     *)
-        main
+        echo "Usage: $0 {test|build|deploy|full} [environment]"
+        echo "  test     - Run tests only"
+        echo "  build    - Build Docker images only"
+        echo "  deploy   - Deploy application only"
+        echo "  full     - Full deployment (default)"
+        echo "  environment - production|staging|development (default: production)"
+        exit 1
         ;;
 esac

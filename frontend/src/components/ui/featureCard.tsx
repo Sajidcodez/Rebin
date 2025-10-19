@@ -1,28 +1,41 @@
-import React from 'react';
-import { cn } from '../../lib/utils';
-import type { IconProps } from '../ui/icons';
+import React from "react";
+import { cn } from "../../lib/utils";
+import type { IconProps } from "./icons";
 
 interface FeatureCardProps {
-  icon: React.ComponentType<IconProps>
+  icon: React.ComponentType<IconProps>;
   title: string;
   description: string;
+  color?: string;
   className?: string;
-  color?: string
 }
 
-export function FeatureCard({ icon:Icon, title, description, className, color = "text-primary"  }: FeatureCardProps) {
+export function FeatureCard({
+  icon: Icon,
+  title,
+  description,
+  color = "text-primary",
+  className,
+}: FeatureCardProps) {
   return (
-    <div className={cn('p-6 rounded-lg border bg-card text-card-foreground shadow-sm', className)}>
-      <div className="flex items-center space-x-4">
-        <div className="flex-shrink-0">
-        <Icon className="h-6 w-6" />
-        <div className={`inline-flex p-3 rounded-lg bg-primary/10 mb-4 ${color}`}></div>
-        </div>
-        <div>
-          <h3 className="text-lg font-semibold">{title}</h3>
-          <p className="text-muted-foreground">{description}</p>
-        </div>
+    <div
+      className={cn(
+        "p-6 rounded-lg bg-card/50 backdrop-blur-sm border border-border/50 text-center group hover:bg-card/70 transition-colors",
+        className
+      )}
+    >
+      <div
+        className={cn(
+          "w-12 h-12 mx-auto mb-4 rounded-lg bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors",
+          color
+        )}
+      >
+        <Icon className="w-6 h-6" />
       </div>
+      <h3 className="text-lg font-semibold mb-2 text-foreground">{title}</h3>
+      <p className="text-sm text-muted-foreground leading-relaxed">
+        {description}
+      </p>
     </div>
   );
 }

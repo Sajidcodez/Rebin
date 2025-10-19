@@ -1,34 +1,37 @@
-import { Icons } from "../ui/icons"
-import { SectionHeader } from "../ui/sectionHeader"
-import { FeatureCard } from "../ui/featureCard"
+import { Icons } from "../ui/icons";
+import { SectionHeader } from "../ui/sectionHeader";
+import { FeatureCard } from "../ui/featureCard";
 
 export function FeaturesSection() {
   const features = [
     {
       icon: Icons.camera,
       title: "Instant Recognition",
-      description: "Snap a photo and get instant classification results powered by advanced AI",
+      description:
+        "Snap a photo and get instant classification results powered by advanced AI",
       color: "text-primary",
     },
     {
-      icon: Icons.sparkles,
-      title: "Smart Suggestions",
-      description: "Receive personalized tips on how to properly dispose or recycle each item",
+      icon: Icons.trophy,
+      title: "Leaderboards",
+      description:
+        "Compete with friends and see how you rank in environmental impact",
       color: "text-secondary",
     },
     {
-      icon: Icons.trendingUp,
-      title: "Track Progress",
-      description: "Monitor your environmental impact with detailed analytics and insights",
+      icon: Icons.target,
+      title: "Challenges",
+      description: "Join community challenges to reduce waste and earn rewards",
       color: "text-primary",
     },
     {
-      icon: Icons.users,
-      title: "Community Driven",
-      description: "Join a global community committed to making sustainable choices",
+      icon: Icons.award,
+      title: "Achievements",
+      description:
+        "Unlock badges and achievements as you make sustainable choices",
       color: "text-secondary",
     },
-  ]
+  ];
 
   return (
     <section id="features" className="relative py-20 sm:py-32">
@@ -52,5 +55,5 @@ export function FeaturesSection() {
         </div>
       </div>
     </section>
-  )
+  );
 }

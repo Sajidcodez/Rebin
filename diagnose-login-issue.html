@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login Issue Diagnostic Tool</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .container {
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      .section {
+        margin: 20px 0;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+      }
+      .success {
+        background-color: #d4edda;
+        border-color: #c3e6cb;
+        color: #155724;
+      }
+      .error {
+        background-color: #f8d7da;
+        border-color: #f5c6cb;
+        color: #721c24;
+      }
+      .warning {
+        background-color: #fff3cd;
+        border-color: #ffeaa7;
+        color: #856404;
+      }
+      .info {
+        background-color: #d1ecf1;
+        border-color: #bee5eb;
+        color: #0c5460;
+      }
+      button {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        margin: 5px;
+      }
+      button:hover {
+        background-color: #0056b3;
+      }
+      button:disabled {
+        background-color: #6c757d;
+        cursor: not-allowed;
+      }
+      .log {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+        padding: 10px;
+        margin: 10px 0;
+        font-family: monospace;
+        font-size: 12px;
+        max-height: 300px;
+        overflow-y: auto;
+      }
+      input {
+        width: 100%;
+        padding: 8px;
+        margin: 5px 0;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+      .solution {
+        background-color: #e8f5e8;
+        border-left: 4px solid #28a745;
+        padding: 15px;
+        margin: 10px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🔍 Login Issue Diagnostic Tool</h1>
+      <p>
+        This tool will help diagnose why you're getting "Invalid email or
+        password" errors even though your credentials are correct.
+      </p>
+
+      <div class="section info">
+        <h3>📋 Common Causes</h3>
+        <ul>
+          <li>
+            <strong>Email not confirmed:</strong> User exists but email
+            confirmation is required
+          </li>
+          <li>
+            <strong>Wrong password:</strong> Password was changed or mistyped
+          </li>
+          <li>
+            <strong>User disabled:</strong> Account was disabled in Supabase
+          </li>
+          <li>
+            <strong>Email case sensitivity:</strong> Email address case mismatch
+          </li>
+          <li>
+            <strong>Database sync issues:</strong> User exists in custom table
+            but not in auth.users
+          </li>
+        </ul>
+      </div>
+
+      <div class="section">
+        <h3>🔗 Step 1: Test Supabase Connection</h3>
+        <button onclick="testConnection()">Test Connection</button>
+        <div id="connection-result"></div>
+      </div>
+
+      <div class="section">
+        <h3>👤 Step 2: Check User Status</h3>
+        <form id="user-check-form">
+          <input
+            type="email"
+            id="user-email"
+            placeholder="Enter your email address"
+            required
+          />
+          <button type="submit">Check User Status</button>
+        </form>
+        <div id="user-status-result"></div>
+      </div>
+
+      <div class="section">
+        <h3>🔑 Step 3: Test Login</h3>
+        <form id="login-test-form">
+          <input type="email" id="login-email" placeholder="Email" required />
+          <input
+            type="password"
+            id="login-password"
+            placeholder="Password"
+            required
+          />
+          <button type="submit">Test Login</button>
+        </form>
+        <div id="login-test-result"></div>
+      </div>
+
+      <div class="section">
+        <h3>🛠️ Step 4: Solutions</h3>
+        <div id="solutions"></div>
+      </div>
+
+      <div class="section">
+        <h3>📝 Diagnostic Logs</h3>
+        <button onclick="clearLogs()">Clear Logs</button>
+        <div id="logs" class="log"></div>
+      </div>
+    </div>
+
+    <script type="module">
+      import { createClient } from "https://cdn.skypack.dev/@supabase/supabase-js@2";
+
+      const supabaseUrl = "https://cikihoznjxwhwqmnifvy.supabase.co/";
+      const supabaseKey =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNpa2lob3puanh3aHdxbW5pZnZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA2OTEyMDksImV4cCI6MjA3NjI2NzIwOX0.C4ED1keyxTUFULpI2zoUIBi-GtZTpBXhFTXXPM8MtQ8";
+
+      const supabase = createClient(supabaseUrl, supabaseKey);
+
+      function log(message, type = "info") {
+        const logsDiv = document.getElementById("logs");
+        const timestamp = new Date().toLocaleTimeString();
+        const logEntry = document.createElement("div");
+        logEntry.innerHTML = `[${timestamp}] ${message}`;
+        logEntry.style.color =
+          type === "error"
+            ? "red"
+            : type === "success"
+            ? "green"
+            : type === "warning"
+            ? "orange"
+            : "black";
+        logsDiv.appendChild(logEntry);
+        logsDiv.scrollTop = logsDiv.scrollHeight;
+      }
+
+      function showSolution(title, description, action = null) {
+        const solutionsDiv = document.getElementById("solutions");
+        const solutionDiv = document.createElement("div");
+        solutionDiv.className = "solution";
+        solutionDiv.innerHTML = `
+          <h4>${title}</h4>
+          <p>${description}</p>
+          ${action ? `<button onclick="${action}">${action}</button>` : ""}
+        `;
+        solutionsDiv.appendChild(solutionDiv);
+      }
+
+      window.testConnection = async function () {
+        const resultDiv = document.getElementById("connection-result");
+        resultDiv.innerHTML = "<p>Testing connection...</p>";
+
+        try {
+          log("Testing Supabase connection...");
+          const { data, error } = await supabase.auth.getSession();
+
+          if (error) {
+            throw error;
+          }
+
+          resultDiv.innerHTML =
+            '<div class="success">✅ Supabase connection successful!</div>';
+          log("Supabase connection successful", "success");
+        } catch (error) {
+          resultDiv.innerHTML = `<div class="error">❌ Connection failed: ${error.message}</div>`;
+          log(`Connection failed: ${error.message}`, "error");
+        }
+      };
+
+      // User status check form
+      document
+        .getElementById("user-check-form")
+        .addEventListener("submit", async function (e) {
+          e.preventDefault();
+
+          const resultDiv = document.getElementById("user-status-result");
+          const email = document.getElementById("user-email").value;
+          resultDiv.innerHTML = "<p>Checking user status...</p>";
+
+          try {
+            log(`Checking user status for: ${email}`);
+
+            // Check if user exists in custom users table
+            const { data: customUser, error: customError } = await supabase
+              .from("users")
+              .select("*")
+              .eq("email", email)
+              .single();
+
+            if (customError && customError.code !== "PGRST116") {
+              throw customError;
+            }
+
+            let statusHtml = "";
+            let hasIssues = false;
+
+            if (customUser) {
+              statusHtml += `
+                <div class="info">
+                  <h4>✅ User found in custom users table</h4>
+                  <p><strong>ID:</strong> ${customUser.id}</p>
+                  <p><strong>Email:</strong> ${customUser.email}</p>
+                  <p><strong>Full Name:</strong> ${
+                    customUser.full_name || "N/A"
+                  }</p>
+                  <p><strong>Email Verified:</strong> ${
+                    customUser.email_verified ? "Yes" : "No"
+                  }</p>
+                  <p><strong>Created:</strong> ${new Date(
+                    customUser.created_at
+                  ).toLocaleString()}</p>
+                </div>
+              `;
+              log(`User found in custom table: ${customUser.id}`, "success");
+
+              if (!customUser.email_verified) {
+                hasIssues = true;
+                statusHtml += `
+                  <div class="warning">
+                    <h4>⚠️ Email not verified</h4>
+                    <p>This user's email has not been confirmed yet.</p>
+                  </div>
+                `;
+                log("Email not verified", "warning");
+              }
+            } else {
+              statusHtml += `
+                <div class="error">
+                  <h4>❌ User not found in custom users table</h4>
+                  <p>No user found with this email address.</p>
+                </div>
+              `;
+              log("User not found in custom table", "error");
+              hasIssues = true;
+            }
+
+            // Try to get user from auth (this might fail if user doesn't exist)
+            try {
+              const { data: authData, error: authError } =
+                await supabase.auth.admin.getUserByEmail(email);
+
+              if (authData && authData.user) {
+                statusHtml += `
+                  <div class="info">
+                    <h4>✅ User found in Supabase Auth</h4>
+                    <p><strong>ID:</strong> ${authData.user.id}</p>
+                    <p><strong>Email Confirmed:</strong> ${
+                      authData.user.email_confirmed_at ? "Yes" : "No"
+                    }</p>
+                    <p><strong>Created:</strong> ${new Date(
+                      authData.user.created_at
+                    ).toLocaleString()}</p>
+                    <p><strong>Last Sign In:</strong> ${
+                      authData.user.last_sign_in_at
+                        ? new Date(
+                            authData.user.last_sign_in_at
+                          ).toLocaleString()
+                        : "Never"
+                    }</p>
+                  </div>
+                `;
+                log(`User found in auth: ${authData.user.id}`, "success");
+
+                if (!authData.user.email_confirmed_at) {
+                  hasIssues = true;
+                  statusHtml += `
+                    <div class="warning">
+                      <h4>⚠️ Email not confirmed in Supabase Auth</h4>
+                      <p>This is likely the cause of your login issues.</p>
+                    </div>
+                  `;
+                  log("Email not confirmed in auth", "warning");
+                }
+              } else {
+                statusHtml += `
+                  <div class="error">
+                    <h4>❌ User not found in Supabase Auth</h4>
+                    <p>User exists in custom table but not in Supabase Auth.</p>
+                  </div>
+                `;
+                log("User not found in auth", "error");
+                hasIssues = true;
+              }
+            } catch (authError) {
+              log(`Auth check failed: ${authError.message}`, "warning");
+              statusHtml += `
+                <div class="warning">
+                  <h4>⚠️ Could not check Supabase Auth</h4>
+                  <p>This might be due to insufficient permissions or the user not existing in auth.</p>
+                </div>
+              `;
+            }
+
+            resultDiv.innerHTML = statusHtml;
+
+            // Show solutions based on findings
+            if (hasIssues) {
+              showSolutions(email, customUser);
+            }
+          } catch (error) {
+            resultDiv.innerHTML = `<div class="error">❌ Error checking user: ${error.message}</div>`;
+            log(`User check failed: ${error.message}`, "error");
+          }
+        });
+
+      // Login test form
+      document
+        .getElementById("login-test-form")
+        .addEventListener("submit", async function (e) {
+          e.preventDefault();
+
+          const resultDiv = document.getElementById("login-test-result");
+          const email = document.getElementById("login-email").value;
+          const password = document.getElementById("login-password").value;
+          resultDiv.innerHTML = "<p>Testing login...</p>";
+
+          try {
+            log(`Testing login for: ${email}`);
+
+            const { data, error } = await supabase.auth.signInWithPassword({
+              email: email,
+              password: password,
+            });
+
+            if (error) {
+              resultDiv.innerHTML = `<div class="error">❌ Login failed: ${error.message}</div>`;
+              log(`Login failed: ${error.message}`, "error");
+
+              // Provide specific solutions based on error
+              if (error.message === "Invalid login credentials") {
+                showLoginSolutions(email);
+              }
+            } else {
+              resultDiv.innerHTML = `
+                <div class="success">
+                  ✅ Login successful!<br>
+                  <strong>User ID:</strong> ${data.user.id}<br>
+                  <strong>Email:</strong> ${data.user.email}<br>
+                  <strong>Email Confirmed:</strong> ${
+                    data.user.email_confirmed_at ? "Yes" : "No"
+                  }
+                </div>
+              `;
+              log("Login successful", "success");
+            }
+          } catch (error) {
+            resultDiv.innerHTML = `<div class="error">❌ Unexpected error: ${error.message}</div>`;
+            log(`Unexpected error: ${error.message}`, "error");
+          }
+        });
+
+      function showSolutions(email, customUser) {
+        const solutionsDiv = document.getElementById("solutions");
+        solutionsDiv.innerHTML = "";
+
+        if (customUser && !customUser.email_verified) {
+          showSolution(
+            "📧 Email Confirmation Required",
+            "Your account exists but your email hasn't been confirmed yet. Check your email inbox (including spam folder) for a confirmation link from Supabase.",
+            "resendConfirmation('" + email + "')"
+          );
+        }
+
+        showSolution(
+          "🔄 Reset Password",
+          "If you're sure your email is correct, try resetting your password. This will also help confirm your email address.",
+          "resetPassword('" + email + "')"
+        );
+
+        showSolution(
+          "🛠️ Manual Email Confirmation",
+          "If you have access to your Supabase dashboard, you can manually confirm the user's email in the Authentication > Users section.",
+          null
+        );
+      }
+
+      function showLoginSolutions(email) {
+        const solutionsDiv = document.getElementById("solutions");
+        solutionsDiv.innerHTML = "";
+
+        showSolution(
+          "📧 Check Email Confirmation",
+          "The most common cause is that your email hasn't been confirmed yet. Check your email inbox for a confirmation link.",
+          "resendConfirmation('" + email + "')"
+        );
+
+        showSolution(
+          "🔑 Reset Password",
+          "Try resetting your password. This will send a new confirmation email and allow you to set a new password.",
+          "resetPassword('" + email + "')"
+        );
+
+        showSolution(
+          "📝 Check Credentials",
+          "Double-check that you're using the exact email address and password you registered with. Email addresses are case-sensitive.",
+          null
+        );
+      }
+
+      window.resendConfirmation = async function (email) {
+        try {
+          log(`Resending confirmation email to: ${email}`);
+          const { error } = await supabase.auth.resend({
+            type: "signup",
+            email: email,
+            options: {
+              emailRedirectTo: `${window.location.origin}/auth/callback?type=signup`,
+            },
+          });
+
+          if (error) {
+            throw error;
+          }
+
+          log("Confirmation email sent successfully", "success");
+          alert("Confirmation email sent! Check your inbox and spam folder.");
+        } catch (error) {
+          log(`Failed to resend confirmation: ${error.message}`, "error");
+          alert(`Failed to send confirmation email: ${error.message}`);
+        }
+      };
+
+      window.resetPassword = async function (email) {
+        try {
+          log(`Sending password reset email to: ${email}`);
+          const { error } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: `${window.location.origin}/auth/callback?type=recovery`,
+          });
+
+          if (error) {
+            throw error;
+          }
+
+          log("Password reset email sent successfully", "success");
+          alert("Password reset email sent! Check your inbox and spam folder.");
+        } catch (error) {
+          log(`Failed to send password reset: ${error.message}`, "error");
+          alert(`Failed to send password reset email: ${error.message}`);
+        }
+      };
+
+      window.clearLogs = function () {
+        document.getElementById("logs").innerHTML = "";
+      };
+
+      // Initialize
+      log("Login Issue Diagnostic Tool initialized");
+      log("Ready to diagnose login issues...");
+    </script>
+  </body>
+</html>

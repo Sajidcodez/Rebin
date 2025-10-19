@@ -1,24 +1,28 @@
-import { cn } from '../../lib/utils';
+import React from "react";
+import { cn } from "../../lib/utils";
 
 interface SectionHeaderProps {
   title: string;
-  subtitle?: string;
-  highlight?: string;
-  description?: string;
+  highlight: string;
+  description: string;
   className?: string;
 }
 
-export function SectionHeader({ title, subtitle, highlight, description, className }: SectionHeaderProps) {
+export function SectionHeader({
+  title,
+  highlight,
+  description,
+  className,
+}: SectionHeaderProps) {
   return (
-    <div className={cn('text-center mb-12', className)}>
-      <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-balance mb-4">
-        {title}{highlight && <span className="text-primary">{highlight}</span>}
+    <div className={cn("text-center space-y-4 mb-12", className)}>
+      <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-balance">
+        {title}
+        <span className="text-primary">{highlight}</span>
       </h2>
-      {(subtitle || description) && (
-        <p className="text-lg sm:text-xl text-muted-foreground text-pretty leading-relaxed max-w-2xl mx-auto">
-          {subtitle || description}
-        </p>
-      )}
+      <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto text-pretty leading-relaxed">
+        {description}
+      </p>
     </div>
   );
 }

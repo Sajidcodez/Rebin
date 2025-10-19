@@ -10,6 +10,8 @@ from routes.infer import router as infer_router
 from routes.explain import router as explain_router
 from routes.event import router as event_router
 from routes.chatbot import router as chatbot_router
+from routes.analytics import router as analytics_router
+from routes.users import router as users_router
 from utils.supabase_client import ensure_seed_policies
 from utils.settings import FRONTEND_ORIGIN
 
@@ -82,6 +84,8 @@ def create_app() -> FastAPI:
     app.include_router(explain_router, prefix="/explain", tags=["explain"])
     app.include_router(event_router, prefix="/event", tags=["event"])
     app.include_router(chatbot_router, prefix="/chatbot", tags=["chatbot"])
+    app.include_router(analytics_router, prefix="/analytics", tags=["analytics"])
+    app.include_router(users_router, prefix="/users", tags=["users"])
 
     @app.on_event("startup")
     async def startup_event() -> None:

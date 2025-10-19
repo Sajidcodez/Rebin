@@ -1,0 +1,178 @@
+{
+  "dashboard": {
+    "id": null,
+    "title": "ReBin Pro - Production Dashboard",
+    "tags": ["rebin-pro", "production"],
+    "style": "dark",
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "API Response Time",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job=\"rebin-api\"}[5m]))",
+            "legendFormat": "95th percentile"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s",
+            "thresholds": {
+              "steps": [
+                { "color": "green", "value": null },
+                { "color": "yellow", "value": 0.1 },
+                { "color": "red", "value": 0.2 }
+              ]
+            }
+          }
+        },
+        "gridPos": { "h": 8, "w": 6, "x": 0, "y": 0 }
+      },
+      {
+        "id": 2,
+        "title": "Request Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(http_requests_total{job=\"rebin-api\"}[5m])",
+            "legendFormat": "{{method}} {{endpoint}}"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Requests/sec",
+            "min": 0
+          }
+        ],
+        "gridPos": { "h": 8, "w": 12, "x": 6, "y": 0 }
+      },
+      {
+        "id": 3,
+        "title": "Error Rate",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "rate(http_requests_total{job=\"rebin-api\",status=~\"5..\"}[5m]) / rate(http_requests_total{job=\"rebin-api\"}[5m]) * 100",
+            "legendFormat": "Error Rate %"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "thresholds": {
+              "steps": [
+                { "color": "green", "value": null },
+                { "color": "yellow", "value": 1 },
+                { "color": "red", "value": 5 }
+              ]
+            }
+          }
+        },
+        "gridPos": { "h": 8, "w": 6, "x": 18, "y": 0 }
+      },
+      {
+        "id": 4,
+        "title": "Active Users",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(rate(sort_events_total[5m]))",
+            "legendFormat": "Active Users"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short"
+          }
+        },
+        "gridPos": { "h": 8, "w": 6, "x": 0, "y": 8 }
+      },
+      {
+        "id": 5,
+        "title": "Sort Events Over Time",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(sort_events_total[5m])",
+            "legendFormat": "Sort Events/sec"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Events/sec",
+            "min": 0
+          }
+        ],
+        "gridPos": { "h": 8, "w": 12, "x": 6, "y": 8 }
+      },
+      {
+        "id": 6,
+        "title": "CO2 Saved",
+        "type": "stat",
+        "targets": [
+          {
+            "expr": "sum(co2_saved_total)",
+            "legendFormat": "Total CO2 Saved (kg)"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "short"
+          }
+        },
+        "gridPos": { "h": 8, "w": 6, "x": 18, "y": 8 }
+      },
+      {
+        "id": 7,
+        "title": "Database Performance",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(postgresql_connections[5m])",
+            "legendFormat": "Connections/sec"
+          },
+          {
+            "expr": "rate(postgresql_queries_total[5m])",
+            "legendFormat": "Queries/sec"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Rate",
+            "min": 0
+          }
+        ],
+        "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 }
+      },
+      {
+        "id": 8,
+        "title": "AI Model Performance",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "rate(ai_inference_duration_seconds[5m])",
+            "legendFormat": "Inference Time"
+          },
+          {
+            "expr": "rate(ai_inference_accuracy[5m])",
+            "legendFormat": "Accuracy"
+          }
+        ],
+        "yAxes": [
+          {
+            "label": "Rate",
+            "min": 0
+          }
+        ],
+        "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 }
+      }
+    ],
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "refresh": "30s"
+  }
+}

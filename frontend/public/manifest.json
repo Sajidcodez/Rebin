@@ -1,0 +1,114 @@
+{
+  "name": "ReBin Pro - AI-Powered Waste Sorting",
+  "short_name": "ReBin Pro",
+  "description": "AI-powered waste sorting application that helps you recycle correctly and reduce environmental impact",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#10b981",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "en",
+  "categories": ["environment", "productivity", "education"],
+  "icons": [
+    {
+      "src": "/avatars/eco-emma.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/avatars/eco-emma.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/earth-day-recycling-nature-green-sustainable.jpg",
+      "sizes": "1280x720",
+      "type": "image/jpeg",
+      "form_factor": "wide",
+      "label": "ReBin Pro main interface"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Scan Item",
+      "short_name": "Scan",
+      "description": "Quickly scan a waste item",
+      "url": "/?action=scan",
+      "icons": [
+        {
+          "src": "/avatars/eco-emma.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "View Leaderboard",
+      "short_name": "Leaderboard",
+      "description": "Check your ranking",
+      "url": "/?action=leaderboard",
+      "icons": [
+        {
+          "src": "/avatars/eco-emma.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Join Challenge",
+      "short_name": "Challenge",
+      "description": "Join a community challenge",
+      "url": "/?action=challenges",
+      "icons": [
+        {
+          "src": "/avatars/eco-emma.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false,
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
+  "handle_links": "preferred",
+  "capture_links": "new-client",
+  "file_handlers": [
+    {
+      "action": "/",
+      "accept": {
+        "image/*": [".jpg", ".jpeg", ".png", ".gif", ".webp"]
+      }
+    }
+  ],
+  "protocol_handlers": [
+    {
+      "protocol": "web+rebin",
+      "url": "/?action=%s"
+    }
+  ],
+  "share_target": {
+    "action": "/",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url",
+      "files": [
+        {
+          "name": "image",
+          "accept": ["image/*"]
+        }
+      ]
+    }
+  }
+}

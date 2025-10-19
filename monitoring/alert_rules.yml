@@ -1,0 +1,201 @@
+groups:
+  - name: rebin-pro-alerts
+    rules:
+      # API Performance Alerts
+      - alert: HighAPIResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="rebin-api"}[5m])) > 0.2
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High API response time detected"
+          description: "API response time is {{ $value }}s, which is above the 200ms threshold"
+
+      - alert: CriticalAPIResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="rebin-api"}[5m])) > 0.5
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical API response time"
+          description: "API response time is {{ $value }}s, which is critically high"
+
+      # Error Rate Alerts
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{job="rebin-api",status=~"5.."}[5m]) / rate(http_requests_total{job="rebin-api"}[5m]) * 100 > 1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value }}%, which is above the 1% threshold"
+
+      - alert: CriticalErrorRate
+        expr: rate(http_requests_total{job="rebin-api",status=~"5.."}[5m]) / rate(http_requests_total{job="rebin-api"}[5m]) * 100 > 5
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical error rate"
+          description: "Error rate is {{ $value }}%, which is critically high"
+
+      # Database Alerts
+      - alert: DatabaseConnectionHigh
+        expr: postgresql_connections > 80
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High database connection count"
+          description: "Database has {{ $value }} connections, which is above the 80% threshold"
+
+      - alert: DatabaseConnectionCritical
+        expr: postgresql_connections > 95
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical database connection count"
+          description: "Database has {{ $value }} connections, which is critically high"
+
+      - alert: DatabaseSlowQueries
+        expr: rate(postgresql_slow_queries_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Slow database queries detected"
+          description: "Database has {{ $value }} slow queries per second"
+
+      # AI Model Performance Alerts
+      - alert: AIModelSlowInference
+        expr: rate(ai_inference_duration_seconds[5m]) > 2
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "AI model inference is slow"
+          description: "AI inference time is {{ $value }}s, which is above the 2s threshold"
+
+      - alert: AIModelLowAccuracy
+        expr: ai_inference_accuracy < 0.85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "AI model accuracy is low"
+          description: "AI model accuracy is {{ $value }}, which is below the 85% threshold"
+
+      # Business Metrics Alerts
+      - alert: LowUserActivity
+        expr: rate(sort_events_total[10m]) < 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low user activity detected"
+          description: "User activity is {{ $value }} events per second, which is unusually low"
+
+      - alert: NoUserActivity
+        expr: rate(sort_events_total[10m]) == 0
+        for: 10m
+        labels:
+          severity: critical
+        annotations:
+          summary: "No user activity detected"
+          description: "No user activity has been detected for 10 minutes"
+
+      # System Resource Alerts
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage detected"
+          description: "CPU usage is {{ $value }}%, which is above the 80% threshold"
+
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is {{ $value }}%, which is above the 85% threshold"
+
+      - alert: HighDiskUsage
+        expr: (1 - (node_filesystem_avail_bytes / node_filesystem_size_bytes)) * 100 > 90
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High disk usage detected"
+          description: "Disk usage is {{ $value }}%, which is above the 90% threshold"
+
+      # Service Health Alerts
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service is down"
+          description: "Service {{ $labels.job }} is down"
+
+      - alert: ServiceUnhealthy
+        expr: health_check_status != 1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Service is unhealthy"
+          description: "Service {{ $labels.job }} health check is failing"
+
+      # Cloudflare Worker Alerts
+      - alert: WorkerHighErrorRate
+        expr: rate(cloudflare_worker_errors_total[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Cloudflare Worker high error rate"
+          description: "Worker error rate is {{ $value }} errors per second"
+
+      - alert: WorkerHighLatency
+        expr: histogram_quantile(0.95, rate(cloudflare_worker_duration_seconds_bucket[5m])) > 1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Cloudflare Worker high latency"
+          description: "Worker latency is {{ $value }}s, which is above the 1s threshold"
+
+      # Rate Limiting Alerts
+      - alert: HighRateLimitHits
+        expr: rate(rate_limit_hits_total[5m]) > 10
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High rate limit hits"
+          description: "Rate limit is being hit {{ $value }} times per second"
+
+      # Security Alerts
+      - alert: SuspiciousActivity
+        expr: rate(suspicious_requests_total[5m]) > 0.1
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Suspicious activity detected"
+          description: "Suspicious requests detected at {{ $value }} requests per second"
+
+      - alert: HighFailedLoginAttempts
+        expr: rate(failed_login_attempts_total[5m]) > 5
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High failed login attempts"
+          description: "Failed login attempts at {{ $value }} per second"

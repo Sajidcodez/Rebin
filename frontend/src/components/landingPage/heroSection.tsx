@@ -5,8 +5,11 @@ import { Badge } from "../ui/badge";
 import { StatCard } from "../ui/statCard";
 import { Icons } from "../ui/icons";
 import { Link } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
 
 export function HeroSection() {
+  const { user } = useAuth();
+
   const stats = [
     { value: "98%", label: "Accuracy" },
     { value: "Expected 100+", label: "Users" },
@@ -36,19 +39,39 @@ export function HeroSection() {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link to="/sorting">
-              <Button
-                size="lg"
-                className="bg-primary text-primary-foreground hover:bg-primary/90 group"
-              >
-                Start Sorting
-                <Icons.arrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-              </Button>
-            </Link>
+            {user ? (
+              <Link to="/sorting">
+                <Button
+                  size="lg"
+                  className="bg-primary text-primary-foreground hover:bg-primary/90 group"
+                >
+                  Start Sorting
+                  <Icons.arrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                </Button>
+              </Link>
+            ) : (
+              <>
+                <Link to="/register">
+                  <Button
+                    size="lg"
+                    className="bg-primary text-primary-foreground hover:bg-primary/90 group"
+                  >
+                    Get Started
+                    <Icons.arrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                </Link>
+              </>
+            )}
             <Button
               size="lg"
               variant="outline"
               className="border-border text-foreground hover:bg-card bg-transparent"
+              onClick={() => {
+                const element = document.querySelector("#features");
+                if (element) {
+                  element.scrollIntoView({ behavior: "smooth" });
+                }
+              }}
             >
               Learn More
             </Button>

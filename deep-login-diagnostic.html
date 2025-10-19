@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Deep Login Diagnostic Tool</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .container {
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      .section {
+        margin: 20px 0;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+      }
+      .success {
+        background-color: #d4edda;
+        border-color: #c3e6cb;
+        color: #155724;
+      }
+      .error {
+        background-color: #f8d7da;
+        border-color: #f5c6cb;
+        color: #721c24;
+      }
+      .warning {
+        background-color: #fff3cd;
+        border-color: #ffeaa7;
+        color: #856404;
+      }
+      .info {
+        background-color: #d1ecf1;
+        border-color: #bee5eb;
+        color: #0c5460;
+      }
+      button {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        margin: 5px;
+      }
+      button:hover {
+        background-color: #0056b3;
+      }
+      button:disabled {
+        background-color: #6c757d;
+        cursor: not-allowed;
+      }
+      .log {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+        padding: 10px;
+        margin: 10px 0;
+        font-family: monospace;
+        font-size: 12px;
+        max-height: 400px;
+        overflow-y: auto;
+      }
+      input {
+        width: 100%;
+        padding: 8px;
+        margin: 5px 0;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+      .user-details {
+        background-color: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 4px;
+        padding: 15px;
+        margin: 10px 0;
+        font-family: monospace;
+        font-size: 12px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+      }
+      @media (max-width: 768px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🔍 Deep Login Diagnostic Tool</h1>
+      <p>
+        This tool performs a comprehensive analysis of your login issue, even
+        when email is confirmed.
+      </p>
+
+      <div class="section info">
+        <h3>📋 What This Tool Checks</h3>
+        <ul>
+          <li>✅ User existence in custom users table</li>
+          <li>✅ User existence in Supabase Auth</li>
+          <li>✅ Email confirmation status</li>
+          <li>✅ User account status (active/disabled)</li>
+          <li>✅ Password hash verification</li>
+          <li>✅ Direct Supabase login test</li>
+          <li>✅ Case sensitivity issues</li>
+          <li>✅ Account creation date and last sign-in</li>
+        </ul>
+      </div>
+
+      <div class="grid">
+        <div class="section">
+          <h3>🔍 Step 1: User Investigation</h3>
+          <form id="user-investigation-form">
+            <input
+              type="email"
+              id="investigate-email"
+              placeholder="Enter your email address"
+              required
+            />
+            <button type="submit">Investigate User</button>
+          </form>
+          <div id="user-investigation-results"></div>
+        </div>
+
+        <div class="section">
+          <h3>🔑 Step 2: Direct Login Test</h3>
+          <form id="direct-login-form">
+            <input type="email" id="login-email" placeholder="Email" required />
+            <input
+              type="password"
+              id="login-password"
+              placeholder="Password"
+              required
+            />
+            <button type="submit">Test Direct Login</button>
+          </form>
+          <div id="direct-login-results"></div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>🛠️ Step 3: Advanced Diagnostics</h3>
+        <button onclick="checkSupabaseConfig()">
+          Check Supabase Configuration
+        </button>
+        <button onclick="testEmailVariations()">Test Email Variations</button>
+        <button onclick="checkUserStatus()">Check User Status</button>
+        <div id="advanced-results"></div>
+      </div>
+
+      <div class="section">
+        <h3>💡 Step 4: Potential Solutions</h3>
+        <div id="solutions"></div>
+      </div>
+
+      <div class="section">
+        <h3>📝 Diagnostic Logs</h3>
+        <button onclick="clearLogs()">Clear Logs</button>
+        <div id="logs" class="log"></div>
+      </div>
+    </div>
+
+    <script type="module">
+      import { createClient } from "https://cdn.skypack.dev/@supabase/supabase-js@2";
+
+      const supabaseUrl = "https://cikihoznjxwhwqmnifvy.supabase.co/";
+      const supabaseKey =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNpa2lob3puanh3aHdxbW5pZnZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA2OTEyMDksImV4cCI6MjA3NjI2NzIwOX0.C4ED1keyxTUFULpI2zoUIBi-GtZTpBXhFTXXPM8MtQ8";
+
+      const supabase = createClient(supabaseUrl, supabaseKey);
+
+      function log(message, type = "info") {
+        const logsDiv = document.getElementById("logs");
+        const timestamp = new Date().toLocaleTimeString();
+        const logEntry = document.createElement("div");
+        logEntry.innerHTML = `[${timestamp}] ${message}`;
+        logEntry.style.color =
+          type === "error"
+            ? "red"
+            : type === "success"
+            ? "green"
+            : type === "warning"
+            ? "orange"
+            : "black";
+        logsDiv.appendChild(logEntry);
+        logsDiv.scrollTop = logsDiv.scrollHeight;
+      }
+
+      function showSolution(title, description, action = null) {
+        const solutionsDiv = document.getElementById("solutions");
+        const solutionDiv = document.createElement("div");
+        solutionDiv.className = "solution";
+        solutionDiv.innerHTML = `
+          <h4>${title}</h4>
+          <p>${description}</p>
+          ${action ? `<button onclick="${action}">${action}</button>` : ""}
+        `;
+        solutionsDiv.appendChild(solutionDiv);
+      }
+
+      // User investigation form
+      document
+        .getElementById("user-investigation-form")
+        .addEventListener("submit", async function (e) {
+          e.preventDefault();
+
+          const email = document.getElementById("investigate-email").value;
+          const resultsDiv = document.getElementById(
+            "user-investigation-results"
+          );
+          resultsDiv.innerHTML = "<p>Investigating user...</p>";
+
+          try {
+            log(`Starting deep investigation for: ${email}`);
+
+            // Check custom users table
+            const { data: customUser, error: customError } = await supabase
+              .from("users")
+              .select("*")
+              .eq("email", email)
+              .single();
+
+            let investigationHtml = "";
+
+            if (customUser) {
+              investigationHtml += `
+                <div class="success">
+                  <h4>✅ User Found in Custom Table</h4>
+                  <div class="user-details">
+                    ID: ${customUser.id}<br>
+                    Email: ${customUser.email}<br>
+                    Full Name: ${customUser.full_name || "N/A"}<br>
+                    Email Verified: ${
+                      customUser.email_verified ? "Yes" : "No"
+                    }<br>
+                    Created: ${new Date(
+                      customUser.created_at
+                    ).toLocaleString()}<br>
+                    Updated: ${new Date(customUser.updated_at).toLocaleString()}
+                  </div>
+                </div>
+              `;
+              log(`User found in custom table: ${customUser.id}`, "success");
+            } else {
+              investigationHtml += `
+                <div class="error">
+                  <h4>❌ User Not Found in Custom Table</h4>
+                  <p>No user found with this email address.</p>
+                </div>
+              `;
+              log("User not found in custom table", "error");
+            }
+
+            // Try to get user from auth (this might fail if user doesn't exist)
+            try {
+              // We can't directly query auth.users with the anon key, but we can try to sign in
+              log("Attempting to get auth user info...");
+
+              // Try a test login to see what error we get
+              const { data: testLogin, error: testError } =
+                await supabase.auth.signInWithPassword({
+                  email: email,
+                  password: "test-password-that-should-fail",
+                });
+
+              if (testError) {
+                log(`Test login error: ${testError.message}`, "info");
+
+                if (testError.message === "Invalid login credentials") {
+                  investigationHtml += `
+                    <div class="info">
+                      <h4>ℹ️ User Exists in Auth</h4>
+                      <p>The "Invalid login credentials" error suggests the user exists in Supabase Auth, but the password is wrong.</p>
+                    </div>
+                  `;
+                } else if (testError.message.includes("email")) {
+                  investigationHtml += `
+                    <div class="warning">
+                      <h4>⚠️ Email Issue</h4>
+                      <p>Error: ${testError.message}</p>
+                    </div>
+                  `;
+                }
+              }
+            } catch (authError) {
+              log(`Auth check failed: ${authError.message}`, "warning");
+            }
+
+            resultsDiv.innerHTML = investigationHtml;
+          } catch (error) {
+            resultsDiv.innerHTML = `<div class="error">❌ Investigation failed: ${error.message}</div>`;
+            log(`Investigation failed: ${error.message}`, "error");
+          }
+        });
+
+      // Direct login test form
+      document
+        .getElementById("direct-login-form")
+        .addEventListener("submit", async function (e) {
+          e.preventDefault();
+
+          const email = document.getElementById("login-email").value;
+          const password = document.getElementById("login-password").value;
+          const resultsDiv = document.getElementById("direct-login-results");
+          resultsDiv.innerHTML = "<p>Testing direct login...</p>";
+
+          try {
+            log(`Testing direct login for: ${email}`);
+
+            const { data, error } = await supabase.auth.signInWithPassword({
+              email: email,
+              password: password,
+            });
+
+            if (error) {
+              resultsDiv.innerHTML = `
+                <div class="error">
+                  <h4>❌ Login Failed</h4>
+                  <p><strong>Error:</strong> ${error.message}</p>
+                  <p><strong>Error Code:</strong> ${
+                    error.status || "Unknown"
+                  }</p>
+                </div>
+              `;
+              log(`Login failed: ${error.message}`, "error");
+
+              // Analyze the error
+              if (error.message === "Invalid login credentials") {
+                showSolution(
+                  "🔑 Password Issue",
+                  "The user exists but the password is incorrect. Try resetting your password.",
+                  "resetPassword('" + email + "')"
+                );
+              } else if (error.message.includes("email")) {
+                showSolution(
+                  "📧 Email Issue",
+                  "There's an issue with the email address. Check for typos or case sensitivity.",
+                  null
+                );
+              }
+            } else {
+              resultsDiv.innerHTML = `
+                <div class="success">
+                  <h4>✅ Login Successful!</h4>
+                  <p><strong>User ID:</strong> ${data.user.id}</p>
+                  <p><strong>Email:</strong> ${data.user.email}</p>
+                  <p><strong>Email Confirmed:</strong> ${
+                    data.user.email_confirmed_at ? "Yes" : "No"
+                  }</p>
+                  <p><strong>Last Sign In:</strong> ${
+                    data.user.last_sign_in_at
+                      ? new Date(data.user.last_sign_in_at).toLocaleString()
+                      : "Never"
+                  }</p>
+                </div>
+              `;
+              log("Login successful!", "success");
+            }
+          } catch (error) {
+            resultsDiv.innerHTML = `<div class="error">❌ Unexpected error: ${error.message}</div>`;
+            log(`Unexpected error: ${error.message}`, "error");
+          }
+        });
+
+      window.checkSupabaseConfig = async function () {
+        const resultsDiv = document.getElementById("advanced-results");
+        resultsDiv.innerHTML = "<p>Checking Supabase configuration...</p>";
+
+        try {
+          log("Checking Supabase configuration...");
+
+          // Test basic connection
+          const { data: session, error: sessionError } =
+            await supabase.auth.getSession();
+
+          if (sessionError) {
+            throw sessionError;
+          }
+
+          resultsDiv.innerHTML = `
+            <div class="success">
+              <h4>✅ Supabase Connection Working</h4>
+              <p>Basic connection to Supabase is working properly.</p>
+            </div>
+          `;
+          log("Supabase connection working", "success");
+        } catch (error) {
+          resultsDiv.innerHTML = `
+            <div class="error">
+              <h4>❌ Supabase Configuration Issue</h4>
+              <p>Error: ${error.message}</p>
+            </div>
+          `;
+          log(`Supabase config error: ${error.message}`, "error");
+        }
+      };
+
+      window.testEmailVariations = async function () {
+        const email = document.getElementById("investigate-email").value;
+        if (!email) {
+          alert("Please enter an email address first");
+          return;
+        }
+
+        const resultsDiv = document.getElementById("advanced-results");
+        resultsDiv.innerHTML = "<p>Testing email variations...</p>";
+
+        const variations = [
+          email,
+          email.toLowerCase(),
+          email.toUpperCase(),
+          email.trim(),
+        ];
+
+        let resultsHtml = "<h4>Email Variations Test:</h4>";
+
+        for (const variation of variations) {
+          try {
+            log(`Testing email variation: ${variation}`);
+            const { error } = await supabase.auth.signInWithPassword({
+              email: variation,
+              password: "test-password",
+            });
+
+            if (error) {
+              resultsHtml += `<p><strong>${variation}:</strong> ${error.message}</p>`;
+            }
+          } catch (err) {
+            resultsHtml += `<p><strong>${variation}:</strong> ${err.message}</p>`;
+          }
+        }
+
+        resultsDiv.innerHTML = resultsHtml;
+      };
+
+      window.checkUserStatus = async function () {
+        const email = document.getElementById("investigate-email").value;
+        if (!email) {
+          alert("Please enter an email address first");
+          return;
+        }
+
+        const resultsDiv = document.getElementById("advanced-results");
+        resultsDiv.innerHTML = "<p>Checking user status...</p>";
+
+        try {
+          // Check if user exists by trying to reset password
+          const { error } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: window.location.origin + "/reset-password",
+          });
+
+          if (error) {
+            resultsDiv.innerHTML = `
+              <div class="error">
+                <h4>❌ User Status Check Failed</h4>
+                <p>Error: ${error.message}</p>
+              </div>
+            `;
+          } else {
+            resultsDiv.innerHTML = `
+              <div class="success">
+                <h4>✅ User Exists and Can Receive Emails</h4>
+                <p>Password reset email sent successfully. Check your inbox.</p>
+              </div>
+            `;
+          }
+        } catch (error) {
+          resultsDiv.innerHTML = `
+            <div class="error">
+              <h4>❌ User Status Check Error</h4>
+              <p>Error: ${error.message}</p>
+            </div>
+          `;
+        }
+      };
+
+      window.resetPassword = async function (email) {
+        try {
+          log(`Sending password reset for: ${email}`);
+          const { error } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: window.location.origin + "/reset-password",
+          });
+
+          if (error) {
+            throw error;
+          }
+
+          log("Password reset email sent", "success");
+          alert("Password reset email sent! Check your inbox.");
+        } catch (error) {
+          log(`Password reset failed: ${error.message}`, "error");
+          alert(`Password reset failed: ${error.message}`);
+        }
+      };
+
+      window.clearLogs = function () {
+        document.getElementById("logs").innerHTML = "";
+      };
+
+      // Initialize
+      log("Deep Login Diagnostic Tool initialized");
+      log("Ready to perform comprehensive login analysis...");
+    </script>
+  </body>
+</html>

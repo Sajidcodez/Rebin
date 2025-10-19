@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>User Table Fix Test</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .test-section {
+        background: white;
+        padding: 20px;
+        margin: 20px 0;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .success {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+        padding: 10px;
+        border-radius: 4px;
+        margin: 10px 0;
+      }
+      .error {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+        padding: 10px;
+        border-radius: 4px;
+        margin: 10px 0;
+      }
+      .info {
+        background: #d1ecf1;
+        color: #0c5460;
+        border: 1px solid #bee5eb;
+        padding: 10px;
+        border-radius: 4px;
+        margin: 10px 0;
+      }
+      .step {
+        background: #fff3cd;
+        color: #856404;
+        border: 1px solid #ffeaa7;
+        padding: 10px;
+        border-radius: 4px;
+        margin: 10px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>🔧 User Table Fix Test</h1>
+
+    <div class="test-section">
+      <h2>🚨 Problem Fixed</h2>
+      <p>
+        <strong>Issue:</strong> Users were being created in Supabase Auth but
+        not in your custom `users` table, causing empty tables.
+      </p>
+      <p>
+        <strong>Solution:</strong> Updated AuthContext to create user profiles
+        in both `auth.users` and custom `users` table.
+      </p>
+    </div>
+
+    <div class="test-section">
+      <h2>📋 Setup Steps</h2>
+
+      <div class="step">
+        <h3>Step 1: Apply Database Triggers (Recommended)</h3>
+        <ol>
+          <li>Go to your <strong>Supabase Dashboard</strong></li>
+          <li>Navigate to <strong>SQL Editor</strong></li>
+          <li>
+            Copy and paste the contents of
+            <code>database/user_trigger.sql</code>
+          </li>
+          <li>Click <strong>"Run"</strong> to execute the triggers</li>
+        </ol>
+        <p>
+          <em
+            >This creates automatic triggers that ensure every user gets a
+            profile record.</em
+          >
+        </p>
+      </div>
+
+      <div class="step">
+        <h3>Step 2: Test the Fix</h3>
+        <ol>
+          <li>Restart your dev server: <code>npm run dev</code></li>
+          <li>
+            Go to <a href="http://localhost:5173/register">Registration Page</a>
+          </li>
+          <li>Create a new account with test data</li>
+          <li>
+            Check your Supabase dashboard → Table Editor →
+            <code>users</code> table
+          </li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="test-section">
+      <h2>🧪 Test Cases</h2>
+
+      <h3>Test 1: New User Registration</h3>
+      <div class="info">
+        <strong>What to do:</strong>
+        <ol>
+          <li>
+            Go to <a href="http://localhost:5173/register">Register Page</a>
+          </li>
+          <li>
+            Fill out the form:
+            <ul>
+              <li>First Name: <code>Test</code></li>
+              <li>Last Name: <code>User</code></li>
+              <li>Email: <code>testuser@example.com</code></li>
+              <li>Password: <code>TestPass123!</code></li>
+              <li>Confirm Password: <code>TestPass123!</code></li>
+              <li>ZIP Code: <code>12345</code></li>
+              <li>Check "I agree to terms"</li>
+            </ul>
+          </li>
+          <li>Click "Create Account"</li>
+        </ol>
+      </div>
+
+      <div class="success">
+        <strong>Expected Result:</strong>
+        <ul>
+          <li>Success message appears</li>
+          <li>Redirects to dashboard or login page</li>
+          <li>
+            Check Supabase Dashboard → Table Editor → <code>users</code> table
+          </li>
+          <li>You should see a new record with the user's data</li>
+        </ul>
+      </div>
+
+      <h3>Test 2: Existing User Login</h3>
+      <div class="info">
+        <strong>What to do:</strong>
+        <ol>
+          <li>Go to <a href="http://localhost:5173/login">Login Page</a></li>
+          <li>Enter credentials from Test 1</li>
+          <li>Click "Sign In"</li>
+        </ol>
+      </div>
+
+      <div class="success">
+        <strong>Expected Result:</strong>
+        <ul>
+          <li>Success message appears</li>
+          <li>Redirects to dashboard</li>
+          <li>User profile is loaded correctly</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="test-section">
+      <h2>🔍 Verification Steps</h2>
+
+      <h3>Check Supabase Dashboard</h3>
+      <ol>
+        <li>Go to your <strong>Supabase Dashboard</strong></li>
+        <li>Navigate to <strong>Table Editor</strong></li>
+        <li>Select the <code>users</code> table</li>
+        <li>
+          You should see records with:
+          <ul>
+            <li><code>id</code> (UUID matching auth.users)</li>
+            <li><code>email</code> (user's email)</li>
+            <li><code>full_name</code> (first + last name)</li>
+            <li>
+              <code>metadata</code> (JSON with first_name, last_name, zip_code)
+            </li>
+            <li><code>email_verified</code> (boolean)</li>
+            <li>
+              <code>created_at</code> and <code>updated_at</code> (timestamps)
+            </li>
+          </ul>
+        </li>
+      </ol>
+
+      <h3>Check Browser Console</h3>
+      <ol>
+        <li>Open browser console (F12)</li>
+        <li>
+          Look for messages like:
+          <ul>
+            <li>"Successfully created user profile in users table"</li>
+            <li>"User profile not found, creating from metadata"</li>
+          </ul>
+        </li>
+        <li>Make sure there are no error messages</li>
+      </ol>
+    </div>
+
+    <div class="test-section">
+      <h2>🔧 What the Fix Does</h2>
+
+      <h3>Registration Flow:</h3>
+      <ol>
+        <li>User signs up → Creates record in <code>auth.users</code></li>
+        <li>
+          <code>createUserProfile</code> is called → Creates record in custom
+          <code>users</code> table
+        </li>
+        <li>User metadata is stored in both places</li>
+      </ol>
+
+      <h3>Login Flow:</h3>
+      <ol>
+        <li>User logs in → Authenticated via <code>auth.users</code></li>
+        <li>
+          <code>ensureUserProfile</code> checks if record exists in custom
+          <code>users</code> table
+        </li>
+        <li>If not found, creates it from user metadata</li>
+        <li>Profile is fetched and set in the app</li>
+      </ol>
+
+      <h3>Database Triggers (Backup):</h3>
+      <ol>
+        <li>Any time <code>auth.users</code> is updated → Trigger fires</li>
+        <li>
+          Automatically creates/updates record in custom
+          <code>users</code> table
+        </li>
+        <li>Ensures data consistency even if frontend fails</li>
+      </ol>
+    </div>
+
+    <div class="test-section">
+      <h2>🚨 Troubleshooting</h2>
+
+      <h3>If users still don't appear in the `users` table:</h3>
+      <ul>
+        <li><strong>Check Browser Console:</strong> Look for error messages</li>
+        <li>
+          <strong>Check Supabase Logs:</strong> Go to Logs in your Supabase
+          dashboard
+        </li>
+        <li>
+          <strong>Verify Database Schema:</strong> Make sure the `users` table
+          exists
+        </li>
+        <li>
+          <strong>Test Database Triggers:</strong> Create a user manually in
+          Supabase Auth
+        </li>
+      </ul>
+
+      <h3>If you get permission errors:</h3>
+      <ul>
+        <li>
+          <strong>Check RLS Policies:</strong> Make sure authenticated users can
+          insert into `users` table
+        </li>
+        <li>
+          <strong>Check Service Role:</strong> Ensure your Supabase project has
+          proper permissions
+        </li>
+      </ul>
+    </div>
+
+    <div class="test-section">
+      <h2>✅ Success Criteria</h2>
+      <p>The fix is working when:</p>
+      <ul>
+        <li>✅ New registrations create records in both tables</li>
+        <li>✅ Existing users get profiles created on login</li>
+        <li>✅ Database triggers work as backup</li>
+        <li>✅ No errors in browser console or Supabase logs</li>
+        <li>✅ User data is properly stored and accessible</li>
+      </ul>
+    </div>
+
+    <div class="test-section">
+      <h2>📚 Files Modified</h2>
+      <ul>
+        <li>
+          <code>frontend/src/contexts/AuthContext.tsx</code> - Updated to create
+          user profiles
+        </li>
+        <li>
+          <code>database/user_trigger.sql</code> - Database triggers for
+          automatic profile creation
+        </li>
+        <li><code>USER_TABLE_FIX_GUIDE.md</code> - Detailed setup guide</li>
+      </ul>
+    </div>
+
+    <script>
+      // Check if dev server is running
+      function checkServerStatus() {
+        fetch("http://localhost:5173")
+          .then((response) => {
+            if (response.ok) {
+              document.body.insertAdjacentHTML(
+                "afterbegin",
+                '<div class="success">✅ Development server is running on http://localhost:5173</div>'
+              );
+            } else {
+              document.body.insertAdjacentHTML(
+                "afterbegin",
+                '<div class="error">❌ Server responded with error: ' +
+                  response.status +
+                  "</div>"
+              );
+            }
+          })
+          .catch((error) => {
+            document.body.insertAdjacentHTML(
+              "afterbegin",
+              '<div class="error">❌ Cannot connect to development server. Make sure it\'s running on http://localhost:5173</div>'
+            );
+          });
+      }
+
+      // Check server status when page loads
+      checkServerStatus();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fix Email Confirmation Issue</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .container {
+        background: white;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      .section {
+        margin: 20px 0;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+      }
+      .success {
+        background-color: #d4edda;
+        border-color: #c3e6cb;
+        color: #155724;
+      }
+      .error {
+        background-color: #f8d7da;
+        border-color: #f5c6cb;
+        color: #721c24;
+      }
+      .warning {
+        background-color: #fff3cd;
+        border-color: #ffeaa7;
+        color: #856404;
+      }
+      .info {
+        background-color: #d1ecf1;
+        border-color: #bee5eb;
+        color: #0c5460;
+      }
+      button {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        margin: 5px;
+      }
+      button:hover {
+        background-color: #0056b3;
+      }
+      button:disabled {
+        background-color: #6c757d;
+        cursor: not-allowed;
+      }
+      .log {
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 5px;
+        padding: 10px;
+        margin: 10px 0;
+        font-family: monospace;
+        font-size: 12px;
+        max-height: 300px;
+        overflow-y: auto;
+      }
+      input {
+        width: 100%;
+        padding: 8px;
+        margin: 5px 0;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+      .solution {
+        background-color: #e8f5e8;
+        border-left: 4px solid #28a745;
+        padding: 15px;
+        margin: 10px 0;
+      }
+      .code {
+        background-color: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 4px;
+        padding: 10px;
+        font-family: monospace;
+        font-size: 12px;
+        margin: 10px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🔧 Fix Email Confirmation Issue</h1>
+      <p>
+        This tool helps fix the email confirmation issue where confirmation
+        emails aren't being sent.
+      </p>
+
+      <div class="section info">
+        <h3>📋 The Problem</h3>
+        <p>You're experiencing an issue where:</p>
+        <ul>
+          <li>✅ Password reset emails work fine</li>
+          <li>❌ Email confirmation emails are not being sent</li>
+          <li>❌ Users can't log in because their email isn't confirmed</li>
+        </ul>
+        <p>
+          This is likely due to Supabase email configuration or the way we're
+          calling the resend function.
+        </p>
+      </div>
+
+      <div class="section">
+        <h3>🔍 Step 1: Test Current Email Functions</h3>
+        <form id="test-form">
+          <input
+            type="email"
+            id="test-email"
+            placeholder="Enter your email address"
+            required
+          />
+          <button type="button" onclick="testPasswordReset()">
+            Test Password Reset Email
+          </button>
+          <button type="button" onclick="testConfirmationEmail()">
+            Test Confirmation Email
+          </button>
+        </form>
+        <div id="test-results"></div>
+      </div>
+
+      <div class="section">
+        <h3>🛠️ Step 2: Manual Email Confirmation</h3>
+        <p>
+          If confirmation emails aren't working, you can manually confirm your
+          email using one of these methods:
+        </p>
+
+        <div class="solution">
+          <h4>Method 1: Use Password Reset (Recommended)</h4>
+          <p>
+            Since password reset emails work, use this to confirm your email:
+          </p>
+          <ol>
+            <li>Click "Test Password Reset Email" above</li>
+            <li>Check your email for the reset link</li>
+            <li>Click the reset link (this confirms your email)</li>
+            <li>Set a new password</li>
+            <li>Try logging in with your new password</li>
+          </ol>
+        </div>
+
+        <div class="solution">
+          <h4>Method 2: Direct Supabase Admin</h4>
+          <p>If you have access to your Supabase dashboard:</p>
+          <ol>
+            <li>Go to your Supabase project dashboard</li>
+            <li>Navigate to Authentication → Users</li>
+            <li>Find your user account</li>
+            <li>Click on the user</li>
+            <li>Click "Confirm user" button</li>
+          </ol>
+        </div>
+
+        <div class="solution">
+          <h4>Method 3: SQL Command</h4>
+          <p>If you have database access, run this SQL command:</p>
+          <div class="code">
+            UPDATE auth.users SET email_confirmed_at = NOW() WHERE email =
+            'your-email@example.com';
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>🔧 Step 3: Fix the Code Issue</h3>
+        <p>
+          The issue might be in how we're calling the resend function. Here's
+          the fix:
+        </p>
+
+        <div class="code">
+          // In AuthContext.tsx, the resendConfirmation function should be:
+          const resendConfirmation = useCallback( async (email: string):
+          Promise&lt;void&gt; => { try { setIsLoading(true); clearError(); //
+          Use the correct Supabase method const { error } = await
+          supabase.auth.resend({ type: 'signup', email: email, options: {
+          emailRedirectTo:
+          `${window.location.origin}/auth/callback?type=signup`, }, }); if
+          (error) { throw error; } } catch (error) { handleError(error, "Failed
+          to resend confirmation email. Please try again."); throw error; }
+          finally { setIsLoading(false); } }, [handleError, clearError] );
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>📧 Step 4: Check Supabase Email Settings</h3>
+        <p>Make sure your Supabase project has email configured:</p>
+        <ol>
+          <li>Go to your Supabase project dashboard</li>
+          <li>Navigate to Authentication → Settings</li>
+          <li>Check "Enable email confirmations" is enabled</li>
+          <li>Verify your email templates are configured</li>
+          <li>Check that your domain is allowed for redirects</li>
+        </ol>
+      </div>
+
+      <div class="section">
+        <h3>📝 Diagnostic Logs</h3>
+        <button onclick="clearLogs()">Clear Logs</button>
+        <div id="logs" class="log"></div>
+      </div>
+    </div>
+
+    <script type="module">
+      import { createClient } from "https://cdn.skypack.dev/@supabase/supabase-js@2";
+
+      const supabaseUrl = "https://cikihoznjxwhwqmnifvy.supabase.co/";
+      const supabaseKey =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNpa2lob3puanh3aHdxbW5pZnZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA2OTEyMDksImV4cCI6MjA3NjI2NzIwOX0.C4ED1keyxTUFULpI2zoUIBi-GtZTpBXhFTXXPM8MtQ8";
+
+      const supabase = createClient(supabaseUrl, supabaseKey);
+
+      function log(message, type = "info") {
+        const logsDiv = document.getElementById("logs");
+        const timestamp = new Date().toLocaleTimeString();
+        const logEntry = document.createElement("div");
+        logEntry.innerHTML = `[${timestamp}] ${message}`;
+        logEntry.style.color =
+          type === "error"
+            ? "red"
+            : type === "success"
+            ? "green"
+            : type === "warning"
+            ? "orange"
+            : "black";
+        logsDiv.appendChild(logEntry);
+        logsDiv.scrollTop = logsDiv.scrollHeight;
+      }
+
+      window.testPasswordReset = async function () {
+        const email = document.getElementById("test-email").value;
+        const resultsDiv = document.getElementById("test-results");
+
+        if (!email) {
+          alert("Please enter an email address first");
+          return;
+        }
+
+        try {
+          log(`Testing password reset email for: ${email}`);
+          const { error } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: `${window.location.origin}/reset-password`,
+          });
+
+          if (error) {
+            throw error;
+          }
+
+          resultsDiv.innerHTML = `
+            <div class="success">
+              ✅ Password reset email sent successfully!<br>
+              Check your email inbox and spam folder.
+            </div>
+          `;
+          log("Password reset email sent successfully", "success");
+        } catch (error) {
+          resultsDiv.innerHTML = `
+            <div class="error">
+              ❌ Password reset failed: ${error.message}
+            </div>
+          `;
+          log(`Password reset failed: ${error.message}`, "error");
+        }
+      };
+
+      window.testConfirmationEmail = async function () {
+        const email = document.getElementById("test-email").value;
+        const resultsDiv = document.getElementById("test-results");
+
+        if (!email) {
+          alert("Please enter an email address first");
+          return;
+        }
+
+        try {
+          log(`Testing confirmation email for: ${email}`);
+          const { error } = await supabase.auth.resend({
+            type: "signup",
+            email: email,
+            options: {
+              emailRedirectTo: `${window.location.origin}/auth/callback?type=signup`,
+            },
+          });
+
+          if (error) {
+            throw error;
+          }
+
+          resultsDiv.innerHTML = `
+            <div class="success">
+              ✅ Confirmation email sent successfully!<br>
+              Check your email inbox and spam folder.
+            </div>
+          `;
+          log("Confirmation email sent successfully", "success");
+        } catch (error) {
+          resultsDiv.innerHTML = `
+            <div class="error">
+              ❌ Confirmation email failed: ${error.message}<br>
+              <strong>This is the issue we need to fix!</strong>
+            </div>
+          `;
+          log(`Confirmation email failed: ${error.message}`, "error");
+        }
+      };
+
+      window.clearLogs = function () {
+        document.getElementById("logs").innerHTML = "";
+      };
+
+      // Initialize
+      log("Email Confirmation Fix Tool initialized");
+      log("Ready to test and fix email confirmation issues...");
+    </script>
+  </body>
+</html>
