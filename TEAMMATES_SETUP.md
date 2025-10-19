@@ -2,6 +2,8 @@
 
 ## You only need to run the frontend!
 
+**Backend and YOLO service are already deployed on Render (free tier).** You just need the frontend!
+
 ### 1️⃣ One-Time Setup
 
 ```bash

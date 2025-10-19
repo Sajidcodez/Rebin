@@ -65,6 +65,23 @@ export default function SortingPage() {
     setAnalysisResult(null)
   }
 
+  // Delete a specific confirmed item
+  const handleDeleteItem = (item: ItemDetection) => {
+    console.log("[Page] Deleting item:", item)
+    setConfirmedItems(prev => 
+      prev.filter(confirmed => 
+        !(confirmed.label === item.label && 
+          Math.abs(confirmed.confidence - item.confidence) < 0.01)
+      )
+    )
+    setAllDisplayItems(prev => 
+      prev.filter(existing => 
+        !(existing.label === item.label && 
+          Math.abs(existing.confidence - item.confidence) < 0.01)
+      )
+    )
+  }
+
   // Send confirmed items to Gemini for analysis
   const handleAnalyze = async () => {
     if (confirmedItems.length === 0) return
@@ -167,6 +184,7 @@ export default function SortingPage() {
                 detectionResults={allDisplayItems}
                 confirmedItems={confirmedItems}
                 onConfirmItem={handleConfirmItem}
+                onDeleteItem={handleDeleteItem}
                 onReset={handleReset}
                 onAnalyze={handleAnalyze}
                 isAnalyzing={isAnalyzing}

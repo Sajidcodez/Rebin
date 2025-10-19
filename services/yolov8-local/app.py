@@ -6,11 +6,20 @@ from PIL import Image
 # --- PyTorch safe allow-list MUST come before any model load ---
 import torch
 from torch.serialization import add_safe_globals, safe_globals
-from ultralytics.nn.tasks import DetectionModel           # import the class itself
-import torch.nn.modules.container as container            # Sequential lives here
+from ultralytics.nn.tasks import DetectionModel
+import torch.nn.modules.container as container
+from ultralytics.nn.modules.conv import Conv
+from ultralytics.nn.modules.block import C2f, SPPF, Bottleneck
 
-# allow-list both classes you’ll see in YOLOv8 checkpoints
-add_safe_globals([DetectionModel, container.Sequential])
+# Allow-list all YOLOv11 classes that need to be loaded
+add_safe_globals([
+    DetectionModel,
+    container.Sequential,
+    Conv,
+    C2f,
+    SPPF,
+    Bottleneck,
+])
 
 from ultralytics import YOLO  # import after the allow-list so internal loads are safe
 

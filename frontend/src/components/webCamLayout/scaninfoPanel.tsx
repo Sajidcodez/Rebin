@@ -10,6 +10,7 @@ interface ScanInfoPanelProps {
   detectionResults?: ItemDetection[]
   confirmedItems?: ItemDetection[]
   onConfirmItem?: (item: ItemDetection) => void
+  onDeleteItem?: (item: ItemDetection) => void
   onReset?: () => void
   onAnalyze?: () => void
   isAnalyzing?: boolean
@@ -21,6 +22,7 @@ export function ScanInfoPanel({
   detectionResults = [], 
   confirmedItems = [],
   onConfirmItem,
+  onDeleteItem,
   onReset,
   onAnalyze,
   isAnalyzing = false,
@@ -104,10 +106,12 @@ export function ScanInfoPanel({
         ) : (
           detectionResults.map((item, index) => {
             const confirmed = isItemConfirmed(item)
+            const hasGeminiRefinement = item.bin || item.explanation
+            
             return (
               <div
                 key={`${item.label}-${index}`}
-                onClick={() => !confirmed && onConfirmItem?.(item)}
+                onClick={() => !confirmed && !isScanning && onConfirmItem?.(item)}
                 className={`rounded-lg p-3 sm:p-4 animate-in fade-in slide-in-from-top-2 duration-300 transition-all ${
                   confirmed 
                     ? 'bg-primary/10 border-2 border-primary cursor-default' 
@@ -116,15 +120,47 @@ export function ScanInfoPanel({
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-white text-sm sm:text-base capitalize">
-                      {item.label}
-                    </h3>
-                    <span className="text-xs sm:text-sm font-medium text-primary">
-                      {Math.round(item.confidence * 100)}%
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-semibold text-white text-sm sm:text-base capitalize">
+                        {item.label}
+                      </h3>
+                      {hasGeminiRefinement && (
+                        <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">
+                          ✨ AI
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-xs sm:text-sm font-medium text-primary">
+                        {Math.round(item.confidence * 100)}%
+                      </span>
+                      {item.bin && (
+                        <span className="text-xs bg-gray-700 text-gray-300 px-2 py-0.5 rounded">
+                          → {item.bin}
+                        </span>
+                      )}
+                    </div>
+                    {item.explanation && (
+                      <p className="text-xs text-gray-400 mt-2 line-clamp-2">
+                        {item.explanation}
+                      </p>
+                    )}
                   </div>
                   {confirmed && (
-                    <div className="flex-shrink-0">
+                    <div className="flex-shrink-0 flex items-center gap-2">
+                      {/* Delete button - only show when scanning is stopped */}
+                      {!isScanning && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            onDeleteItem?.(item)
+                          }}
+                          className="h-8 w-8 rounded-full bg-red-500/20 hover:bg-red-500/30 flex items-center justify-center transition"
+                        >
+                          <Icons.x className="h-4 w-4 text-red-400" />
+                        </button>
+                      )}
+                      {/* Checkmark */}
                       <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
                         <Icons.check className="h-4 w-4 text-white" />
                       </div>
