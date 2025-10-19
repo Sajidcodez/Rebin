@@ -107,8 +107,11 @@ export function ScanInfoPanel({
             return (
               <div
                 key={`${item.label}-${index}`}
-                className={`bg-gray-800 border rounded-lg p-3 sm:p-4 animate-in fade-in slide-in-from-top-2 duration-300 ${
-                  confirmed ? 'border-primary bg-primary/10' : 'border-gray-700'
+                onClick={() => !confirmed && onConfirmItem?.(item)}
+                className={`rounded-lg p-3 sm:p-4 animate-in fade-in slide-in-from-top-2 duration-300 transition-all ${
+                  confirmed 
+                    ? 'bg-primary/10 border-2 border-primary cursor-default' 
+                    : 'bg-gray-800 border-2 border-gray-700 cursor-pointer hover:border-primary/50 hover:bg-gray-700 active:scale-[0.98]'
                 }`}
               >
                 <div className="flex items-center justify-between gap-3">
@@ -120,22 +123,13 @@ export function ScanInfoPanel({
                       {Math.round(item.confidence * 100)}%
                     </span>
                   </div>
-                  <div className="flex-shrink-0">
-                    {confirmed ? (
+                  {confirmed && (
+                    <div className="flex-shrink-0">
                       <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
                         <Icons.check className="h-4 w-4 text-white" />
                       </div>
-                    ) : (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => onConfirmItem?.(item)}
-                        className="h-8 w-8 p-0 border-primary/50 hover:bg-primary hover:border-primary"
-                      >
-                        <Icons.check className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )
@@ -153,44 +147,6 @@ export function ScanInfoPanel({
               <Icons.sparkles className="h-5 w-5 mr-2" />
               Analyze with AI
             </Button>
-          </div>
-        )}
-        
-        {/* Loading State - shows when analyzing */}
-        {isAnalyzing && (
-          <div ref={loadingRef} className="p-6 sm:p-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="bg-gray-800 border border-primary/30 rounded-lg p-6 sm:p-8 text-center space-y-4">
-              <div className="flex justify-center">
-                <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-full bg-primary/20 flex items-center justify-center animate-pulse">
-                  <Icons.sparkles className="h-6 w-6 sm:h-8 sm:w-8 text-primary animate-spin" />
-                </div>
-              </div>
-              <div>
-                <h3 className="text-lg sm:text-xl font-semibold text-white mb-2">
-                  Analyzing with AI...
-                </h3>
-                <p className="text-sm sm:text-base text-gray-400">
-                  Our AI is determining the best disposal method for your items
-                </p>
-              </div>
-              <div className="flex justify-center gap-1">
-                <div className="h-2 w-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <div className="h-2 w-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <div className="h-2 w-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-              </div>
-            </div>
-          </div>
-        )}
-        
-        {/* Analysis Result - shows after Gemini responds */}
-        {analysisResult && !isAnalyzing && (
-          <div className="p-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="bg-primary/10 border border-primary/30 rounded-lg p-4">
-              <h3 className="text-base font-semibold text-primary mb-2">Analysis Complete!</h3>
-              <p className="text-sm text-gray-300">
-                {analysisResult.error || JSON.stringify(analysisResult, null, 2)}
-              </p>
-            </div>
           </div>
         )}
       </div>
