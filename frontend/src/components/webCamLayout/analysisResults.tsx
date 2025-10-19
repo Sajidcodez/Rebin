@@ -1,6 +1,5 @@
 "use client"
 
-import { useState } from "react"
 import { Icons } from "../ui/icons"
 import { ItemDecision } from "../../types"
 
@@ -11,8 +10,6 @@ interface AnalysisResultsProps {
   onScanAnother: () => void
   onReset: () => void
 }
-
-type VoicePersonality = "friendly" | "enthusiastic" | "educational"
 
 const PERSONALITIES = {
   friendly: {
@@ -38,30 +35,10 @@ const PERSONALITIES = {
   },
 }
 
-export function AnalysisResults({ results, confirmedItems, selectedPersonality, onScanAnother, onReset }: AnalysisResultsProps) {
+export function AnalysisResults({ results, selectedPersonality, onScanAnother, onReset }: AnalysisResultsProps) {
   // selectedPersonality now comes from props (what was sent to Gemini)
 
-  // Format the response based on personality
-  const formatResponse = (decision: ItemDecision, personality: VoicePersonality): string => {
-    const { label, bin, explanation, eco_tip } = decision
-
-    switch (personality) {
-      case "friendly":
-        // Green Gary - Friendly & approachable: "Hey! That's recyclable—it's a bottle. Just give it a quick rinse first!"
-        return `Hey! That goes in ${bin}—it's ${label.startsWith('a') || label.startsWith('e') || label.startsWith('i') || label.startsWith('o') || label.startsWith('u') ? 'an' : 'a'} ${label}. ${eco_tip || explanation.split('.')[0]}.`
-      
-      case "enthusiastic":
-        // Eco Emma - Energetic & passionate: "Awesome find! This bottle is totally recyclable! Pro tip: rinse it out to keep things clean!"
-        return `Awesome find! This ${label} goes in ${bin}! ${eco_tip ? `Pro tip: ${eco_tip}` : explanation} Every item counts! 🌍`
-      
-      case "educational":
-        // Professor Pete - Knowledgeable & clear: "This item should be placed in recycling. Explanation: [details]. Note: [eco tip]."
-        return `This ${label} should be placed in ${bin}. ${explanation}${eco_tip ? ` Note: ${eco_tip}` : ''}`
-      
-      default:
-        return explanation
-    }
-  }
+  // Gemini now handles personality formatting, so we just display the explanation directly
 
   const getBinColor = (bin: string) => {
     switch (bin.toLowerCase()) {
@@ -93,7 +70,7 @@ export function AnalysisResults({ results, confirmedItems, selectedPersonality, 
   const decisions: ItemDecision[] = results?.decisions || []
 
   return (
-    <div className="w-full max-w-5xl animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="w-full max-w-5xl animate-in fade-in slide-in-from-bottom-4 duration-500 pb-8">
       {/* Header showing which personality was used */}
       <div className="mb-6">
         <h2 className="text-2xl sm:text-3xl font-bold text-white">
@@ -104,11 +81,10 @@ export function AnalysisResults({ results, confirmedItems, selectedPersonality, 
         </p>
       </div>
 
-      {/* Results Cards */}
-      <div className="space-y-4">
+      {/* Results Cards - Scrollable */}
+      <div className="space-y-4 mb-8">
         {decisions.map((decision, index) => {
           const BinIcon = getBinIcon(decision.bin)
-          const formattedText = formatResponse(decision, selectedPersonality)
           
           return (
             <div
@@ -135,9 +111,15 @@ export function AnalysisResults({ results, confirmedItems, selectedPersonality, 
                 </button>
               </div>
 
-              {/* Formatted Response */}
-              <div className="bg-gray-800 border border-gray-700 rounded-lg p-4">
-                <p className="text-gray-300 leading-relaxed">{formattedText}</p>
+              {/* Explanation from Gemini (already formatted by personality) */}
+              <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 space-y-2">
+                <p className="text-gray-300 leading-relaxed">{decision.explanation}</p>
+                {decision.eco_tip && (
+                  <div className="pt-2 mt-2 border-t border-gray-700">
+                    <p className="text-sm text-primary font-medium">💡 Eco Tip:</p>
+                    <p className="text-sm text-gray-400 mt-1">{decision.eco_tip}</p>
+                  </div>
+                )}
               </div>
 
               {/* Personality Label */}
@@ -150,8 +132,8 @@ export function AnalysisResults({ results, confirmedItems, selectedPersonality, 
         })}
       </div>
 
-      {/* Action Buttons */}
-      <div className="flex gap-4 mt-8">
+      {/* Action Buttons - Sticky at bottom */}
+      <div className="flex flex-col sm:flex-row gap-4">
         <button
           onClick={onScanAnother}
           className="flex-1 px-6 py-3 bg-primary hover:bg-primary/90 text-white font-semibold rounded-lg transition"

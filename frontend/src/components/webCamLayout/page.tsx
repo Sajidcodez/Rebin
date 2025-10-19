@@ -123,38 +123,42 @@ export default function SortingPage() {
       <main className="flex-1 container mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Show loading/results fullscreen when analyzing */}
         {isAnalyzing || analysisResult ? (
-          <div className="flex items-center justify-center h-[calc(100vh-12rem)]">
+          <div className="h-[calc(100vh-12rem)] overflow-y-auto">
             {isAnalyzing ? (
-              // Loading State - Fullscreen
-              <div className="w-full max-w-2xl text-center space-y-8 animate-in fade-in duration-500">
-                <div className="flex justify-center">
-                  <div className="h-24 w-24 rounded-full bg-primary/20 flex items-center justify-center animate-pulse">
-                    <div className="h-16 w-16 rounded-full border-4 border-primary border-t-transparent animate-spin" />
+              // Loading State - Fullscreen (centered)
+              <div className="flex items-center justify-center h-full">
+                <div className="w-full max-w-2xl text-center space-y-8 animate-in fade-in duration-500">
+                  <div className="flex justify-center">
+                    <div className="h-24 w-24 rounded-full bg-primary/20 flex items-center justify-center animate-pulse">
+                      <div className="h-16 w-16 rounded-full border-4 border-primary border-t-transparent animate-spin" />
+                    </div>
                   </div>
-                </div>
-                <div className="space-y-4">
-                  <h2 className="text-3xl sm:text-4xl font-bold text-white">
-                    Analyzing with AI...
-                  </h2>
-                  <p className="text-lg text-gray-400">
-                    Our AI is determining the best disposal method for your {confirmedItems.length} item{confirmedItems.length !== 1 ? 's' : ''}
-                  </p>
-                  <div className="flex justify-center gap-2 pt-4">
-                    <div className="h-3 w-3 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <div className="h-3 w-3 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <div className="h-3 w-3 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  <div className="space-y-4">
+                    <h2 className="text-3xl sm:text-4xl font-bold text-white">
+                      Analyzing with AI...
+                    </h2>
+                    <p className="text-lg text-gray-400">
+                      Our AI is determining the best disposal method for your {confirmedItems.length} item{confirmedItems.length !== 1 ? 's' : ''}
+                    </p>
+                    <div className="flex justify-center gap-2 pt-4">
+                      <div className="h-3 w-3 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <div className="h-3 w-3 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <div className="h-3 w-3 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                    </div>
                   </div>
                 </div>
               </div>
             ) : (
-              // Results State - Fullscreen with Voice Personalities
-              <AnalysisResults
-                results={analysisResult}
-                confirmedItems={confirmedItems}
-                selectedPersonality={selectedPersonality}
-                onScanAnother={() => setAnalysisResult(null)}
-                onReset={handleReset}
-              />
+              // Results State - Scrollable with buttons always visible
+              <div className="flex items-start justify-center py-8">
+                <AnalysisResults
+                  results={analysisResult}
+                  confirmedItems={confirmedItems}
+                  selectedPersonality={selectedPersonality}
+                  onScanAnother={() => setAnalysisResult(null)}
+                  onReset={handleReset}
+                />
+              </div>
             )}
           </div>
         ) : (
