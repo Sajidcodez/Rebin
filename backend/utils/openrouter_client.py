@@ -9,25 +9,48 @@ from schemas import ItemDecision
 from utils.http_client import http_client
 from utils.settings import OPENROUTER_API_KEY, OPENROUTER_MODEL
 
-SYSTEM_PROMPT = (
-    "You are a zero-shot waste sorting expert. "
-    "For each item, decide if it goes to recycling, compost, or trash. "
-    "Respect local policy overrides when provided. Return concise explanations and an eco-tip."
-)
+SYSTEM_PROMPTS = {
+    "friendly": (
+        "You are Green Gary, a friendly and approachable waste sorting guide. "
+        "You make recycling feel easy and natural. You keep your explanations to the point and concise. "
+        "For each item, decide if it goes to recycling, compost, or trash. "
+        "Keep explanations simple and friendly. Give helpful eco-tips."
+    ),
+    "enthusiastic": (
+        "You are Eco Emma, an energetic environmental enthusiast who gets excited about sustainable practices! "
+        "You're passionate and motivating. Use enthusiastic language and show excitement. Your explanations are catered towards children. "
+        "For each item, decide if it goes to recycling, compost, or trash. "
+        "Make people feel inspired about every item they sort correctly! Give upbeat eco-tips."
+    ),
+    "educational": (
+        "You are Professor Pete, a knowledgeable educator who provides clear, informative guidance. "
+        "You're professional and detail-oriented. Use precise, educational, techincal language. "
+        "For each item, decide if it goes to recycling, compost, or trash. "
+        "Provide thorough explanations with scientific accuracy. Give informative eco-tips."
+    ),
+}
+
+# Default prompt for backward compatibility
+SYSTEM_PROMPT = SYSTEM_PROMPTS["friendly"]
 
 
 async def get_reasoned_decisions(
     items: List[str],
     zip_code: Optional[str],
     local_policies: Optional[Dict[str, Any]],
+    personality: str = "friendly",
 ) -> List[ItemDecision]:
     """
     Calls OpenRouter for structured decisions, with optional local policy context.
+    Uses the specified personality to tailor the response.
     """
     if not OPENROUTER_API_KEY:
         logger.error("OPENROUTER_API_KEY is empty or missing")
         raise HTTPException(status_code=500, detail={"error": "config", "message": "OPENROUTER_API_KEY missing"})
     
+    # Get the system prompt for the chosen personality
+    system_prompt = SYSTEM_PROMPTS.get(personality, SYSTEM_PROMPTS["friendly"])
+    logger.info(f"Using personality: {personality}")
     logger.info(f"Using OpenRouter API key: {OPENROUTER_API_KEY[:10]}...")
 
     user_context = {
@@ -37,11 +60,11 @@ async def get_reasoned_decisions(
     }
 
     prompt = (
-        f"{SYSTEM_PROMPT}\n"
         f"ZIP: {zip_code}\n"
         f"Local Policies JSON: {json.dumps(local_policies or {})}\n"
         f"Items: {', '.join(items)}\n"
-        "Respond as JSON list with objects: {label, bin, explanation, eco_tip}. Only these keys."
+        "Respond as JSON list with objects: {label, bin, explanation, eco_tip}. "
+        "Match your tone and personality to the system prompt."
     )
 
     headers = {
@@ -53,7 +76,7 @@ async def get_reasoned_decisions(
     body = {
         "model": OPENROUTER_MODEL,
         "messages": [
-            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt},
         ],
         "response_format": {"type": "json_object"},

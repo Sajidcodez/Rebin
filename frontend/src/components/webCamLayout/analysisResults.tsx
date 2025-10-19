@@ -7,52 +7,56 @@ import { ItemDecision } from "../../types"
 interface AnalysisResultsProps {
   results: any
   confirmedItems: any[]
+  selectedPersonality: "friendly" | "enthusiastic" | "educational"
   onScanAnother: () => void
   onReset: () => void
 }
 
-type VoicePersonality = "man" | "woman" | "professor"
+type VoicePersonality = "friendly" | "enthusiastic" | "educational"
 
 const PERSONALITIES = {
-  man: {
-    name: "Alex",
-    icon: Icons.user,
-    description: "Concise & Direct",
-    style: "Quick facts, no fluff",
+  friendly: {
+    name: "Green Gary",
+    image: "/avatars/green-gary.png",
+    description: "Friendly & Approachable",
+    style: "Makes recycling feel easy",
+    color: "#4CAF50"
   },
-  woman: {
-    name: "Emma",
-    icon: Icons.users,
-    description: "Friendly & Helpful",
-    style: "Warm tips and encouragement",
+  enthusiastic: {
+    name: "Eco Emma",
+    image: "/avatars/eco-emma.png",
+    description: "Energetic & Passionate",
+    style: "Gets excited about sustainability",
+    color: "#FF9800"
   },
-  professor: {
-    name: "Dr. Chen",
-    icon: Icons.sparkles,
-    description: "Detailed & Educational",
-    style: "In-depth explanations",
+  educational: {
+    name: "Professor Pete",
+    image: "/avatars/professor-pete.png",
+    description: "Knowledgeable & Clear",
+    style: "Provides informative guidance",
+    color: "#2196F3"
   },
 }
 
-export function AnalysisResults({ results, confirmedItems, onScanAnother, onReset }: AnalysisResultsProps) {
-  const [selectedPersonality, setSelectedPersonality] = useState<VoicePersonality>("man")
+export function AnalysisResults({ results, confirmedItems, selectedPersonality, onScanAnother, onReset }: AnalysisResultsProps) {
+  // selectedPersonality now comes from props (what was sent to Gemini)
 
   // Format the response based on personality
   const formatResponse = (decision: ItemDecision, personality: VoicePersonality): string => {
     const { label, bin, explanation, eco_tip } = decision
 
     switch (personality) {
-      case "man":
-        // Concise: "Recycle. Aluminum can. Rinse and crush if your city allows."
-        return `${bin.charAt(0).toUpperCase() + bin.slice(1)}. ${label}. ${explanation.split('.')[0]}.`
+      case "friendly":
+        // Green Gary - Friendly & approachable: "Hey! That's recyclable—it's a bottle. Just give it a quick rinse first!"
+        return `Hey! That goes in ${bin}—it's ${label.startsWith('a') || label.startsWith('e') || label.startsWith('i') || label.startsWith('o') || label.startsWith('u') ? 'an' : 'a'} ${label}. ${eco_tip || explanation.split('.')[0]}.`
       
-      case "woman":
-        // Friendly: "That belongs in recycling—it's an aluminum can. Quick tip: a quick rinse keeps bins clean!"
-        return `That belongs in ${bin}—it's ${label.startsWith('a') || label.startsWith('e') || label.startsWith('i') || label.startsWith('o') || label.startsWith('u') ? 'an' : 'a'} ${label}. Quick tip: ${eco_tip}`
+      case "enthusiastic":
+        // Eco Emma - Energetic & passionate: "Awesome find! This bottle is totally recyclable! Pro tip: rinse it out to keep things clean!"
+        return `Awesome find! This ${label} goes in ${bin}! ${eco_tip ? `Pro tip: ${eco_tip}` : explanation} Every item counts! 🌍`
       
-      case "professor":
-        // Didactic: "Recycle. The cylindrical pull-tab and printed aluminum indicate a can. Most municipalities accept aluminum curbside."
-        return `${bin.charAt(0).toUpperCase() + bin.slice(1)}. ${explanation} ${eco_tip}`
+      case "educational":
+        // Professor Pete - Knowledgeable & clear: "This item should be placed in recycling. Explanation: [details]. Note: [eco tip]."
+        return `This ${label} should be placed in ${bin}. ${explanation}${eco_tip ? ` Note: ${eco_tip}` : ''}`
       
       default:
         return explanation
@@ -90,36 +94,14 @@ export function AnalysisResults({ results, confirmedItems, onScanAnother, onRese
 
   return (
     <div className="w-full max-w-5xl animate-in fade-in slide-in-from-bottom-4 duration-500">
-      {/* Voice Personality Selector */}
+      {/* Header showing which personality was used */}
       <div className="mb-6">
-        <h3 className="text-sm font-medium text-gray-400 mb-3">Choose Voice Style</h3>
-        <div className="grid grid-cols-3 gap-3">
-          {(Object.keys(PERSONALITIES) as VoicePersonality[]).map((personality) => {
-            const p = PERSONALITIES[personality]
-            const Icon = p.icon
-            const isSelected = selectedPersonality === personality
-            
-            return (
-              <button
-                key={personality}
-                onClick={() => setSelectedPersonality(personality)}
-                className={`p-4 rounded-lg border-2 transition-all ${
-                  isSelected
-                    ? "bg-primary/20 border-primary"
-                    : "bg-gray-800 border-gray-700 hover:border-gray-600"
-                }`}
-              >
-                <Icon className={`h-6 w-6 mx-auto mb-2 ${isSelected ? "text-primary" : "text-gray-400"}`} />
-                <div className="text-center">
-                  <div className={`font-semibold text-sm ${isSelected ? "text-primary" : "text-white"}`}>
-                    {p.name}
-                  </div>
-                  <div className="text-xs text-gray-400 mt-1">{p.description}</div>
-                </div>
-              </button>
-            )
-          })}
-        </div>
+        <h2 className="text-2xl sm:text-3xl font-bold text-white">
+          Analysis Complete! ✨
+        </h2>
+        <p className="text-gray-400 mt-2">
+          Analyzed by <span className="text-primary font-semibold">{PERSONALITIES[selectedPersonality].name}</span>
+        </p>
       </div>
 
       {/* Results Cards */}

@@ -14,6 +14,7 @@ export default function SortingPage() {
   const [allDisplayItems, setAllDisplayItems] = useState<ItemDetection[]>([]) // Combined list for display
   const [isAnalyzing, setIsAnalyzing] = useState(false) // Loading state for Gemini
   const [analysisResult, setAnalysisResult] = useState<any>(null) // Gemini response
+  const [selectedPersonality, setSelectedPersonality] = useState<"friendly" | "enthusiastic" | "educational">("friendly") // Voice personality
 
   const handleImageUpload = (imageData: string) => {
     console.log("[Page] Image uploaded, sending to backend:", imageData.substring(0, 50))
@@ -29,33 +30,48 @@ export default function SortingPage() {
   const handleDetectionResults = (results: ItemDetection[]) => {
     console.log("[Page] Received detection results:", results)
     
-    // Merge: confirmed items + new live detections (avoid duplicates)
-    const combined = [...confirmedItems]
-    results.forEach(result => {
-      const alreadyConfirmed = confirmedItems.some(
-        confirmed => confirmed.label === result.label && 
-        Math.abs(confirmed.confidence - result.confidence) < 0.01
-      )
-      if (!alreadyConfirmed) {
-        combined.push(result)
+    if (!isScanning) {
+      // If not scanning, ignore new detections
+      return
+    }
+    
+    // Step 1: Remove duplicates from the incoming results (keep highest confidence)
+    const uniqueResults = results.reduce((acc, result) => {
+      const existing = acc.find(item => item.label === result.label)
+      if (!existing) {
+        acc.push(result)
+      } else if (result.confidence > existing.confidence) {
+        // Replace with higher confidence detection
+        acc[acc.indexOf(existing)] = result
       }
+      return acc
+    }, [] as ItemDetection[])
+    
+    // Step 2: Filter out already confirmed items
+    const newDetections = uniqueResults.filter(result => {
+      return !confirmedItems.some(confirmed => confirmed.label === result.label)
     })
-    setAllDisplayItems(combined)
+    
+    console.log("[Page] Unique detections after filtering:", newDetections.map(d => d.label))
+    
+    // Step 3: Combine confirmed items + new unique detections
+    setAllDisplayItems([...confirmedItems, ...newDetections])
   }
 
-  // Store confirmed item for Gemini processing and keep in display
+  // Confirm an item (add to confirmed list)
   const handleConfirmItem = (item: ItemDetection) => {
-    console.log("[Page] Item confirmed for Gemini:", item)
-    setConfirmedItems(prev => [...prev, item])
+    console.log("[Page] Item confirmed:", item)
     
-    // Update display list to reflect confirmed status
-    setAllDisplayItems(prev => {
-      const exists = prev.some(
-        existing => existing.label === item.label && 
-        Math.abs(existing.confidence - item.confidence) < 0.01
-      )
-      return exists ? prev : [...prev, item]
-    })
+    // Check if already confirmed (by label only - no duplicates)
+    const isDuplicate = confirmedItems.some(confirmed => confirmed.label === item.label)
+    
+    if (isDuplicate) {
+      console.warn("[Page] Item already confirmed, ignoring:", item.label)
+      return
+    }
+    
+    // Add to confirmed items
+    setConfirmedItems(prev => [...prev, item])
   }
 
   // Reset all confirmed items
@@ -68,33 +84,28 @@ export default function SortingPage() {
 
   // Delete a specific confirmed item
   const handleDeleteItem = (item: ItemDetection) => {
-    console.log("[Page] Deleting item:", item)
-    setConfirmedItems(prev => 
-      prev.filter(confirmed => 
-        !(confirmed.label === item.label && 
-          Math.abs(confirmed.confidence - item.confidence) < 0.01)
-      )
-    )
-    setAllDisplayItems(prev => 
-      prev.filter(existing => 
-        !(existing.label === item.label && 
-          Math.abs(existing.confidence - item.confidence) < 0.01)
-      )
-    )
+    console.log("[Page] Deleting item:", item.label)
+    
+    // Remove from confirmed items by label
+    setConfirmedItems(prev => prev.filter(confirmed => confirmed.label !== item.label))
+    
+    // Remove from display items by label
+    setAllDisplayItems(prev => prev.filter(existing => existing.label !== item.label))
   }
 
   // Send confirmed items to Gemini for analysis
-  const handleAnalyze = async () => {
+  const handleAnalyze = async (personality: "friendly" | "enthusiastic" | "educational") => {
     if (confirmedItems.length === 0) return
     
-    console.log("[Page] Sending to Gemini:", confirmedItems)
+    setSelectedPersonality(personality)
+    console.log("[Page] Sending to Gemini with personality:", personality, confirmedItems)
     setIsAnalyzing(true)
     setAnalysisResult(null)
     
     try {
       // Import apiClient dynamically to avoid issues
       const { apiClient } = await import("../../lib/api")
-      const response = await apiClient.explain(confirmedItems)
+      const response = await apiClient.explain(confirmedItems, undefined, undefined, personality)
       console.log("[Page] Gemini response:", response)
       setAnalysisResult(response)
     } catch (error) {
@@ -140,6 +151,7 @@ export default function SortingPage() {
               <AnalysisResults
                 results={analysisResult}
                 confirmedItems={confirmedItems}
+                selectedPersonality={selectedPersonality}
                 onScanAnother={() => setAnalysisResult(null)}
                 onReset={handleReset}
               />

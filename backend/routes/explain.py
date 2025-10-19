@@ -15,11 +15,13 @@ async def explain(payload: ExplainRequest) -> ExplainResponse:
     Calls the reasoning API to determine bin decisions and tips.
     """
     try:
-        logger.info("Calling reasoning API for explanation")
+        personality = payload.personality or "friendly"
+        logger.info(f"Calling reasoning API for explanation with personality: {personality}")
         decisions: List[ItemDecision] = await get_reasoned_decisions(
             items=[i.label for i in payload.items],
             zip_code=payload.zip,
             local_policies=payload.policies_json,
+            personality=personality,
         )
         return ExplainResponse(decisions=decisions)
     except HTTPException:

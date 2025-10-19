@@ -37,12 +37,14 @@ export const apiClient = {
   async explain(
     items: { label: string }[],
     zip?: string,
-    policies?: any
+    policies?: any,
+    personality?: string
   ): Promise<ExplainResponse> {
     const response = await api.post("/explain", {
       items,
       zip,
       policies_json: policies,
+      personality: personality || "friendly",
     });
     return response.data;
   },
