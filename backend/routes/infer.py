@@ -5,6 +5,7 @@ from loguru import logger
 
 from schemas import InferResponse, ItemDetection
 from utils.http_client import http_client
+from utils.openrouter_client import refine_label_with_vision
 from utils.settings import YOLO_INFER_URL
 
 router = APIRouter()
@@ -84,14 +85,42 @@ async def infer(
                 detail={"error": "cv_error", "message": "Invalid response format from computer vision service"},
             )
         
+        # Ambiguous labels that need Gemini refinement
+        AMBIGUOUS_LABELS = {"bottle", "cup", "bowl", "container"}
+        CONFIDENCE_THRESHOLD = 0.7  # Refine if confidence < 70%
+        
         for obj in objects:
             try:
-                items.append(
-                    ItemDetection(
-                        label=str(obj.get("label", "unknown")),
-                        confidence=float(obj.get("confidence", 0.0)),
-                    )
+                label = str(obj.get("label", "unknown"))
+                confidence = float(obj.get("confidence", 0.0))
+                
+                # Check if label needs refinement
+                needs_refinement = (
+                    label.lower() in AMBIGUOUS_LABELS or 
+                    confidence < CONFIDENCE_THRESHOLD
                 )
+                
+                if needs_refinement:
+                    logger.info(f"Label '{label}' ({int(confidence * 100)}%) is ambiguous, refining with Gemini Vision...")
+                    try:
+                        refined = await refine_label_with_vision(file_data, label, confidence)
+                        # Use refined label and add metadata
+                        items.append(
+                            ItemDetection(
+                                label=refined.get("label", label),
+                                confidence=confidence,
+                                bin=refined.get("bin"),
+                                explanation=refined.get("reason"),
+                            )
+                        )
+                        logger.info(f"✨ Refined: '{label}' → '{refined.get('label')}' (bin: {refined.get('bin')})")
+                    except Exception as e:
+                        logger.warning(f"Refinement failed for '{label}', using YOLO label: {e}")
+                        items.append(ItemDetection(label=label, confidence=confidence))
+                else:
+                    # Clear label, use YOLO result
+                    items.append(ItemDetection(label=label, confidence=confidence))
+                    
             except (ValueError, TypeError) as e:
                 logger.warning(f"Skipping invalid detection object: {obj}, error: {e}")
                 continue

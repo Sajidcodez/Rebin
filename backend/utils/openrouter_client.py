@@ -1,3 +1,4 @@
+import base64
 import json
 from typing import Any, Dict, List, Optional
 
@@ -136,3 +137,86 @@ async def get_reasoned_decisions(
     except Exception as exc:  # noqa: BLE001
         logger.error(f"Failed parsing reasoning response: {exc}")
         raise HTTPException(status_code=502, detail={"error": "parse_error", "message": "Bad reasoning response"})
+
+
+async def refine_label_with_vision(
+    image_bytes: bytes,
+    yolo_label: str,
+    confidence: float,
+) -> Dict[str, str]:
+    """
+    Uses Gemini Vision to refine an ambiguous YOLO label.
+    Returns: {"label": "refined label", "bin": "recycling/compost/trash", "reason": "..."}
+    """
+    if not OPENROUTER_API_KEY:
+        logger.error("OPENROUTER_API_KEY missing for vision refinement")
+        raise HTTPException(status_code=500, detail={"error": "config", "message": "OPENROUTER_API_KEY missing"})
+    
+    # Encode image to base64
+    image_base64 = base64.b64encode(image_bytes).decode("utf-8")
+    
+    prompt = (
+        f"YOLO detected this as '{yolo_label}' with {int(confidence * 100)}% confidence, but that's ambiguous. "
+        f"Look at the image and tell me:\n"
+        f"1. What is this item specifically? (e.g., 'aluminum can', 'plastic bottle', 'paper cup')\n"
+        f"2. Which bin should it go in? (recycling/compost/trash)\n"
+        f"3. Why?\n\n"
+        f"Respond as JSON: {{\"label\": \"specific item name\", \"bin\": \"recycling/compost/trash\", \"reason\": \"short explanation\"}}"
+    )
+    
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "HTTP-Referer": "https://rebin.local",
+        "X-Title": "ReBin Pro",
+        "Content-Type": "application/json",
+    }
+    
+    body = {
+        "model": "google/gemini-2.0-flash-exp:free",  # Gemini with vision support
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": prompt
+                    },
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:image/jpeg;base64,{image_base64}"
+                        }
+                    }
+                ]
+            }
+        ],
+        "response_format": {"type": "json_object"},
+    }
+    
+    logger.info(f"Refining '{yolo_label}' label with Gemini Vision")
+    try:
+        resp = await http_client.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers=headers,
+            json=body,
+            timeout=45.0
+        )
+    except Exception as e:
+        logger.error(f"Gemini Vision request failed: {e}")
+        # Fallback: return original YOLO label
+        return {"label": yolo_label, "bin": "trash", "reason": f"Vision service unavailable (using YOLO: {yolo_label})"}
+    
+    if resp.status_code != 200:
+        logger.error(f"Gemini Vision error: {resp.status_code} {resp.text}")
+        return {"label": yolo_label, "bin": "trash", "reason": f"Vision service error (using YOLO: {yolo_label})"}
+    
+    try:
+        data = resp.json()
+        content = data["choices"][0]["message"]["content"]
+        result = json.loads(content)
+        
+        logger.info(f"Gemini refined '{yolo_label}' → '{result.get('label')}' (bin: {result.get('bin')})")
+        return result
+    except Exception as e:
+        logger.error(f"Failed to parse Gemini Vision response: {e}")
+        return {"label": yolo_label, "bin": "trash", "reason": f"Parse error (using YOLO: {yolo_label})"}

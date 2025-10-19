@@ -1,6 +1,8 @@
 export interface ItemDetection {
   label: string;
   confidence: number;
+  bin?: string; // Disposal bin (if refined by Gemini)
+  explanation?: string; // Explanation (if refined by Gemini)
 }
 
 export interface InferResponse {
