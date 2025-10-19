@@ -10,7 +10,7 @@ import {
   AvatarConfig,
 } from "../types";
 
-const API_BASE_URL ="https://rebin-backend.onrender.com/";
+const API_BASE_URL = "http://localhost:8000";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
