@@ -161,19 +161,6 @@ The project includes comprehensive test coverage for:
 - **Security**: XSS protection, CSRF tokens, rate limiting
 - **Integration**: End-to-end workflow testing
 
-### Test Structure
-
-```
-frontend/src/test/
-├── components/
-│   ├── auth/           # Authentication component tests
-│   ├── community/      # Community feature tests
-│   ├── ui/            # UI component tests
-│   └── navigation/    # Navigation component tests
-├── lib/               # Library and utility tests
-└── setup.ts          # Test configuration
-```
-
 ## 📊 Database Schema
 
 ### Core Tables
@@ -394,47 +381,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **OpenRouter** for AI model access
 - **ElevenLabs** for text-to-speech capabilities
 - **YOLOv8** for computer vision capabilities
-
-## 📞 Support
-
-- **Documentation**: [docs.rebin-pro.com](https://docs.rebin-pro.com)
-- **Issues**: [GitHub Issues](https://github.com/your-org/rebin-pro/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/your-org/rebin-pro/discussions)
-- **Email**: support@rebin-pro.com
-
-## 🗺️ Roadmap
-
-### Phase 1 (Current)
-
-- ✅ Core waste sorting functionality
-- ✅ User authentication and profiles
-- ✅ Comprehensive community features (leaderboards, challenges, achievements)
-- ✅ Real-time notifications and updates
-- ✅ Advanced analytics and reporting
-- ✅ PWA capabilities with offline support
-- ✅ Comprehensive test coverage
-
-### Phase 2 (Q2 2024)
-
-- 🔄 Advanced AI models for better accuracy
-- 🔄 Multi-language support
-- 🔄 Social features and sharing
-- 🔄 Mobile app (React Native)
-
-### Phase 3 (Q3 2024)
-
-- 📋 Enterprise features for businesses
-- 📋 API for third-party integrations
-- 📋 Advanced analytics and reporting
-- 📋 Machine learning model improvements
-
-### Phase 4 (Q4 2024)
-
-- 📋 Global expansion with local policies
-- 📋 Integration with smart waste bins
-- 📋 Carbon credit marketplace
-- 📋 Advanced gamification features
-
----
 
 **ReBin Pro** - Making waste sorting smarter, one item at a time. 🌱♻️
